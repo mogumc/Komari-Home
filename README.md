@@ -6,7 +6,7 @@ Home - 让你的探针变为你的个人主页
 如果你只是想使用[Home](https://github.com/mogumc/home) ←请点击前往独立版本
 
 # 技术栈
-使用原生HTML+Vue3.js编写
+Vue3 
 
 # 须知
 本项目待发布
