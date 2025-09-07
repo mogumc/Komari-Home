@@ -1,0 +1,13 @@
+{
+    "name": "Komari Home",
+    "short": "komarihome", 
+    "description": "A Komari Web Theme with HomePage",
+    "version": "1.0.0",
+    "author": "mogumc",
+    "url": "https://github.com/mogumc/Komari-Home",
+    "preview": "preview.png",
+    "configuration":{
+        "type":"managed",
+        "data":[]
+    }
+}
