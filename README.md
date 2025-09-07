@@ -1,6 +1,6 @@
 # Komari-Home
 Home - 让你的探针变为你的个人主页
-[](./preview.png)
+[](preview.png)
 
 # 介绍
 本项目融合了home-page,并将探针划入子页面,使用统一UI设计.  
