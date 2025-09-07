@@ -7,12 +7,12 @@
 
 ---
 
-## 💡 须知
+### 💡 须知
 > 本项目仍在开发中，敬请期待！
 
 ---
 
-## 🔧 项目介绍
+### 🔧 项目介绍
 
 本项目在 [`home`](https://github.com/mogumc/home) 的基础上进行了功能整合与 UI 优化，将探针信息整合为子页面，实现更统一、清爽的主页风格体验。
 
@@ -20,12 +20,12 @@
 
 ---
 
-## ⚙️ 技术栈
+### ⚙️ 技术栈
 - 🌱 Vue 3
 
 #### 由开源探针的[Komari](https://github.com/komari-monitor/komari)提供基础设施
 
 ---
 
-## 📄 开源许可
+### 📄 开源许可
 [MIT License](https://opensource.org/licenses/MIT)
