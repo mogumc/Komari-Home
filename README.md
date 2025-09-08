@@ -23,7 +23,7 @@
 ### ⚙️ 技术栈
 - 🌱 Vue 3
 
-#### 由开源探针的[Komari](https://github.com/komari-monitor/komari)提供基础设施
+#### 由开源探针[Komari](https://github.com/komari-monitor/komari)提供基础设施
 
 ---
 
