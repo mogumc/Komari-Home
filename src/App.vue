@@ -19,8 +19,8 @@
 </template>
 
 <script setup>
-import Mask from '@/pages/mask.vue'
-import Foot from '@/pages/foot.vue'
+import Mask from '@/pages/Layout/Mask.vue'
+import Foot from '@/pages/Layout/Footer.vue'
 </script>
 
 <style scoped>
