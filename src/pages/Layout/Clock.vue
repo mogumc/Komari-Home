@@ -34,17 +34,23 @@ onMounted(() => {
   border: 1px solid rgba(255,255,255, 0.1);
   padding: 1rem;
   text-align: center;
+  color: #eee;
+}
+
+.module h3 {
+  color: #fff;
+  margin-bottom: 0.5rem;
 }
 
 .date {
   font-size: 0.9rem;
-  color: #bbb;
+  color: #ccc;
   font-weight: normal;
 }
 
 .clock {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #ccc;
+  color: #fff;
 }
 </style>

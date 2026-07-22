@@ -2,12 +2,10 @@
   <div class="container">
     <slot name="left"></slot>
     <slot name="right"></slot>
-    <Footer />
   </div>
 </template>
 
 <script setup>
-import Footer from './Footer.vue'
 </script>
 
 <style scoped>

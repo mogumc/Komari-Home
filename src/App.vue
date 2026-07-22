@@ -6,9 +6,16 @@
     <!-- 遮罩层 -->
     <Mask />
 
+    <!-- 顶栏导航 -->
+    <NavBar />
+
     <!-- 主内容 -->
     <div class="main-content">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="page-fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </div>
 
     <!-- 页脚 -->
@@ -20,16 +27,20 @@
 
 <script setup>
 import Mask from '@/pages/Layout/Mask.vue'
+import NavBar from '@/pages/Layout/NavBar.vue'
 import Foot from '@/pages/Layout/Footer.vue'
 </script>
 
-<style scoped>
-* {
+<style>
+/* 全局 reset — 非 scoped，确保所有子组件继承 */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
+</style>
 
+<style scoped>
 #app {
   min-height: 100vh;
   display: flex;
@@ -53,9 +64,10 @@ import Foot from '@/pages/Layout/Footer.vue'
   flex: 1;
   width: 100%;
   padding: 20px;
+  padding-top: 80px;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
   z-index: 1;
 }
@@ -67,12 +79,32 @@ import Foot from '@/pages/Layout/Footer.vue'
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.6);
   z-index: -1;
 }
 
 footer {
   position: relative;
   z-index: 1;
+  width: 100%;
+  padding: 0 20px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+/* 路由过渡动画 */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-12px);
 }
 </style>

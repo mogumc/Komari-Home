@@ -37,18 +37,24 @@ onMounted(() => {
   border: 1px solid rgba(255,255,255, 0.1);
   padding: 1rem;
   text-align: center;
+  color: #eee;
+}
+
+.module h3 {
+  color: #fff;
+  margin-bottom: 0.5rem;
 }
 
 .quote {
   font-size: 1.1rem;
   font-style: italic;
-  color: #ddd;
+  color: #eee;
   margin: 0;
 }
 
 .quote-source {
   font-size: 0.9rem;
-  color: #aaa;
+  color: #ccc;
   margin-top: 5px;
   text-align: right;
 }

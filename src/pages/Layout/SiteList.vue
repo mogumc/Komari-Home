@@ -33,14 +33,13 @@ const goto = (url) => {
 
 <style scoped>
 .sites-container {
-  display: grid;
+  display: flex;
   flex-wrap: wrap;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 1rem;
 }
 
 .site-block {
-  min-width: 140px;
+  width: 160px;
   background: rgba(255, 255, 255, 0.06);
   padding: 1rem;
   border-radius: 12px;
@@ -65,10 +64,9 @@ const goto = (url) => {
   font-weight: bold;
 }
 
-@media (max-width: 375px) {
-  .sites-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+@media (max-width: 480px) {
+  .site-block {
+    width: 100%;
   }
 }
 </style>
