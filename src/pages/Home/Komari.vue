@@ -68,6 +68,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const nodes = ref([])
 const liveData = reactive({})
+const onlineList = ref([])
 const wsConnected = ref(false)
 let ws = null
 let wsTimer = null
@@ -108,9 +109,10 @@ function connectWs() {
   ws.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data)
-      if (msg.data) {
-        for (const [uuid, metrics] of Object.entries(msg.data)) {
-          if (uuid === 'online') continue
+      const payload = msg.data || msg
+      if (payload.online) onlineList.value = payload.online
+      if (payload.data) {
+        for (const [uuid, metrics] of Object.entries(payload.data)) {
           liveData[uuid] = metrics
         }
       }
@@ -128,29 +130,28 @@ function connectWs() {
 }
 
 function isOnline(uuid) {
-  return liveData[uuid] && liveData[uuid].online !== false
+  return onlineList.value.includes(uuid)
 }
 
 function cpuUsage(uuid) {
   const d = liveData[uuid]
   if (!d) return 0
-  const cpu = d.cpu ?? d.CPU ?? 0
-  return Math.min(100, Math.round(cpu))
+  return Math.min(100, Math.round(d.cpu?.usage ?? 0))
 }
 
 function memUsage(uuid) {
   const d = liveData[uuid]
   if (!d) return 0
-  const used = d.ram?.used ?? d.RAM?.used ?? 0
-  const total = d.ram?.total ?? d.RAM?.total ?? 1
+  const used = d.ram?.used ?? 0
+  const total = d.ram?.total ?? 0
   if (!total) return 0
   return Math.min(100, Math.round((used / total) * 100))
 }
 
 function formatNet(d) {
-  const rx = d.net?.rx ?? d.Network?.rx ?? 0
-  const tx = d.net?.tx ?? d.Network?.tx ?? 0
-  return `${formatBytes(rx)}/s ↑ ${formatBytes(tx)}/s ↓`
+  const up = d.network?.up ?? 0
+  const down = d.network?.down ?? 0
+  return `↑ ${formatBytes(up)}/s  ↓ ${formatBytes(down)}/s`
 }
 
 function formatBytes(bytes) {
@@ -161,7 +162,7 @@ function formatBytes(bytes) {
 }
 
 function formatUptime(d) {
-  const up = d.uptime ?? d.Uptime ?? 0
+  const up = d.uptime ?? 0
   if (!up) return '-'
   const days = Math.floor(up / 86400)
   const hours = Math.floor((up % 86400) / 3600)

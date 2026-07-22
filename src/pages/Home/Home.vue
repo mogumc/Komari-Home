@@ -5,8 +5,8 @@
         <img src="https://avatars.githubusercontent.com/u/67809394" alt="头像">
       </div>
       <div class="header-info">
-        <div class="name">MoGuQAQ</div>
-        <div class="bio">中国 · 全栈开发者 · 大数据 · Go · Java · Vue</div>
+        <div class="name">Name</div>
+        <div class="bio">中国 · 上海 · 前端开发工程师</div>
       </div>
       <div class="socials">
         <a

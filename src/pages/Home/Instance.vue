@@ -238,9 +238,12 @@ function connectWs() {
   ws.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data)
-      if (msg.data && msg.data[uuid]) {
-        metrics.value = msg.data[uuid]
-        online.value = msg.data[uuid].online !== false
+      const payload = msg.data || msg
+      if (payload.online) {
+        online.value = payload.online.includes(uuid)
+      }
+      if (payload.data && payload.data[uuid]) {
+        metrics.value = payload.data[uuid]
       }
     } catch {}
   }
@@ -251,37 +254,44 @@ function connectWs() {
 
 const cpuPercent = computed(() => {
   if (!metrics.value) return 0
-  return Math.round(metrics.value.cpu ?? metrics.value.CPU ?? 0)
+  return Math.min(100, Math.round(metrics.value.cpu?.usage ?? 0))
 })
 
-const memUsed = computed(() => metrics.value?.ram?.used ?? metrics.value?.RAM?.used ?? 0)
-const memTotal = computed(() => metrics.value?.ram?.total ?? metrics.value?.RAM?.total ?? 0)
+const memUsed = computed(() => metrics.value?.ram?.used ?? 0)
+const memTotal = computed(() => metrics.value?.ram?.total ?? 0)
 const memPercent = computed(() => {
   if (!memTotal.value) return 0
   return Math.round((memUsed.value / memTotal.value) * 100)
 })
 
-const diskUsed = computed(() => metrics.value?.disk?.used ?? metrics.value?.Disk?.used ?? 0)
-const diskTotal = computed(() => metrics.value?.disk?.total ?? metrics.value?.Disk?.total ?? 0)
+const diskUsed = computed(() => metrics.value?.disk?.used ?? 0)
+const diskTotal = computed(() => metrics.value?.disk?.total ?? 0)
 const diskPercent = computed(() => {
   if (!diskTotal.value) return 0
   return Math.round((diskUsed.value / diskTotal.value) * 100)
 })
 
-const netRx = computed(() => metrics.value?.net?.rx ?? metrics.value?.Network?.rx ?? 0)
-const netTx = computed(() => metrics.value?.net?.tx ?? metrics.value?.Network?.tx ?? 0)
-const connections = computed(() => metrics.value?.connections ?? metrics.value?.Connections ?? 0)
-const processes = computed(() => metrics.value?.processes ?? metrics.value?.Processes ?? 0)
+const netRx = computed(() => metrics.value?.network?.down ?? 0)
+const netTx = computed(() => metrics.value?.network?.up ?? 0)
+const connections = computed(() => {
+  const c = metrics.value?.connections
+  if (!c) return 0
+  return (c.tcp ?? 0) + (c.udp ?? 0)
+})
+const processes = computed(() => metrics.value?.process ?? 0)
 
 const loadAvg = computed(() => {
-  const load = metrics.value?.load ?? metrics.value?.Load
-  if (Array.isArray(load)) return load.map(l => l.toFixed(2))
-  if (load && typeof load === 'object') return [load['1'] ?? '-', load['5'] ?? '-', load['15'] ?? '-']
-  return ['-', '-', '-']
+  const load = metrics.value?.load
+  if (!load) return ['-', '-', '-']
+  return [
+    (load.load1 ?? 0).toFixed(2),
+    (load.load5 ?? 0).toFixed(2),
+    (load.load15 ?? 0).toFixed(2)
+  ]
 })
 
 const uptimeStr = computed(() => {
-  const up = metrics.value?.uptime ?? metrics.value?.Uptime ?? 0
+  const up = metrics.value?.uptime ?? 0
   if (!up) return '-'
   const days = Math.floor(up / 86400)
   const hours = Math.floor((up % 86400) / 3600)
