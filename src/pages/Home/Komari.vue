@@ -64,93 +64,93 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { rpcCall, createRpcSocket } from '@/utils/rpc'
 
 const router = useRouter()
 const nodes = ref([])
 const liveData = reactive({})
-const onlineList = ref([])
 const wsConnected = ref(false)
-let ws = null
-let wsTimer = null
+let socket = null
+let pollTimer = null
 
 onMounted(() => {
   fetchNodes()
-  connectWs()
+  connectAndPoll()
 })
 
 onUnmounted(() => {
-  if (ws) ws.close()
-  if (wsTimer) clearInterval(wsTimer)
+  if (socket) socket.close()
+  if (pollTimer) clearInterval(pollTimer)
 })
 
-function fetchNodes() {
-  fetch('/api/nodes')
-    .then(res => res.json())
-    .then(data => {
-      if (data.status === 'success' || data.data) {
-        nodes.value = data.data || []
-      }
-    })
-    .catch(() => {})
+async function fetchNodes() {
+  try {
+    const data = await rpcCall('common:getNodes')
+    // common:getNodes 无 uuid 时返回 {[uuid]: Client}
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      nodes.value = Object.values(data)
+    } else if (Array.isArray(data)) {
+      nodes.value = data
+    }
+  } catch {}
 }
 
-function connectWs() {
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  ws = new WebSocket(`${protocol}//${location.host}/api/clients`)
+function connectAndPoll() {
+  socket = createRpcSocket()
 
-  ws.onopen = () => {
-    wsConnected.value = true
-    ws.send('get')
-    wsTimer = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) ws.send('get')
-    }, 3000)
-  }
-
-  ws.onmessage = (event) => {
-    try {
-      const msg = JSON.parse(event.data)
-      const payload = msg.data || msg
-      if (payload.online) onlineList.value = payload.online
-      if (payload.data) {
-        for (const [uuid, metrics] of Object.entries(payload.data)) {
-          liveData[uuid] = metrics
+  const poll = () => {
+    if (socket.readyState !== WebSocket.OPEN) return
+    socket.call('common:getNodesLatestStatus', {}, 8000)
+      .then(data => {
+        wsConnected.value = true
+        // common:getNodesLatestStatus 返回 {[uuid]: NodeStatus}
+        if (data && typeof data === 'object') {
+          for (const [uuid, status] of Object.entries(data)) {
+            liveData[uuid] = status
+          }
         }
-      }
-    } catch {}
+      })
+      .catch(() => {
+        wsConnected.value = false
+      })
   }
 
-  ws.onclose = () => {
-    wsConnected.value = false
-    setTimeout(connectWs, 5000)
+  // 初始轮询
+  const checkOpen = () => {
+    if (socket.readyState === WebSocket.OPEN) {
+      wsConnected.value = true
+      poll()
+      pollTimer = setInterval(poll, 3000)
+    } else {
+      setTimeout(checkOpen, 300)
+    }
   }
-
-  ws.onerror = () => {
-    ws.close()
-  }
+  checkOpen()
 }
 
 function isOnline(uuid) {
-  return onlineList.value.includes(uuid)
+  const d = liveData[uuid]
+  return d ? d.online === true : false
 }
 
 function cpuUsage(uuid) {
   const d = liveData[uuid]
   if (!d) return 0
-  return Math.min(100, Math.round(d.cpu?.usage ?? 0))
+  return Math.min(100, Math.round(d.cpu ?? 0))
 }
 
 function memUsage(uuid) {
   const d = liveData[uuid]
   if (!d) return 0
-  const used = d.ram?.used ?? 0
-  const total = d.ram?.total ?? 0
+  const used = d.ram ?? 0
+  const total = d.ram_total ?? 0
   if (!total) return 0
   return Math.min(100, Math.round((used / total) * 100))
 }
 
 function formatNet(d) {
-  const up = d.network?.up ?? 0
-  const down = d.network?.down ?? 0
+  const up = d.net_out ?? 0
+  const down = d.net_in ?? 0
   return `↑ ${formatBytes(up)}/s  ↓ ${formatBytes(down)}/s`
 }
 

@@ -11,7 +11,7 @@
       <div class="glass-card">
         <h4><i class="bi bi-cpu"></i> CPU</h4>
         <div class="big-num">{{ cpuPercent }}%</div>
-        <div class="sub-info">{{ nodeInfo.cpu || '-' }} 核心</div>
+        <div class="sub-info">{{ nodeInfo.cpu_name || '-' }} 核心</div>
       </div>
 
       <!-- 内存 -->
@@ -97,6 +97,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { rpcCall, createRpcSocket } from '@/utils/rpc'
 
 const route = useRoute()
 const uuid = route.query.uuid || ''
@@ -105,77 +106,129 @@ const nodeInfo = ref({})
 const metrics = ref(null)
 const online = ref(false)
 
-let ws = null
-let wsTimer = null
+let socket = null
+let pollTimer = null
 
 onMounted(() => {
   fetchNodeInfo()
   fetchRecent()
-  connectWs()
+  connectAndPoll()
   fetchPingData()
 })
 
 onUnmounted(() => {
-  if (ws) ws.close()
-  if (wsTimer) clearInterval(wsTimer)
+  if (socket) socket.close()
+  if (pollTimer) clearInterval(pollTimer)
 })
 
 const pingTasks = ref([])
 const pingHours = ref(1)
 
-function fetchPingData() {
-  fetch('/api/task/ping')
-    .then(res => res.json())
-    .then(data => {
-      const list = data.data || data || []
-      if (!Array.isArray(list)) return
-      const relevant = list.filter(t => (t.nodes || []).some(n => (n.uuid || n) === uuid))
-      if (relevant.length) {
-        fetchPingRecords(relevant)
-      }
-    })
-    .catch(() => {})
+async function fetchNodeInfo() {
+  if (!uuid) return
+  try {
+    const node = await rpcCall('common:getNodes', { uuid })
+    if (node) {
+      nodeName.value = node.name || ''
+      nodeInfo.value = node
+    }
+  } catch {}
 }
 
-function fetchPingRecords(tasks) {
-  Promise.all(
-    tasks.map(task =>
-      fetch(`/api/records/ping?task_id=${task.id}&uuid=${uuid}&hours=${pingHours.value}`)
-        .then(res => res.json())
-        .then(data => {
-          const records = data.data || data.records || []
-          const summaries = data.summaries || data.nodes || []
-          let avg = -1, min = -1, max = -1, loss = 0
+async function fetchRecent() {
+  if (!uuid) return
+  try {
+    const data = await rpcCall('common:getNodeRecentStatus', { uuid })
+    if (data.records && data.records.length) {
+      const latest = data.records[data.records.length - 1]
+      metrics.value = latest
+      online.value = true
+    }
+  } catch {}
+}
 
-          if (summaries.length) {
-            const s = summaries[0]
-            avg = Math.round(s.avg ?? s.average ?? -1)
-            min = Math.round(s.min ?? -1)
-            max = Math.round(s.max ?? -1)
-            loss = Math.round(s.loss ?? s.packet_loss ?? 0)
-          } else if (records.length) {
-            const vals = []
-            let losses = 0
-            for (const r of records) {
-              const v = r.latency ?? r.value ?? -1
-              if (v < 0) losses++
-              else vals.push(v)
-            }
-            if (vals.length) {
-              avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
-              min = Math.round(Math.min(...vals))
-              max = Math.round(Math.max(...vals))
-            }
-            loss = records.length ? Math.round((losses / records.length) * 100) : 0
-          }
+function connectAndPoll() {
+  if (!uuid) return
+  socket = createRpcSocket()
 
-          return { id: task.id, name: task.name, avg, min, max, loss }
+  const poll = () => {
+    if (socket.readyState !== WebSocket.OPEN) return
+    socket.call('common:getNodesLatestStatus', { uuid }, 8000)
+      .then(data => {
+        // 返回 {[uuid]: NodeStatus}
+        if (data && data[uuid]) {
+          metrics.value = data[uuid]
+          online.value = data[uuid].online === true
+        }
+      })
+      .catch(() => {})
+  }
+
+  const checkOpen = () => {
+    if (socket.readyState === WebSocket.OPEN) {
+      poll()
+      pollTimer = setInterval(poll, 3000)
+    } else {
+      setTimeout(checkOpen, 300)
+    }
+  }
+  checkOpen()
+}
+
+async function fetchPingData() {
+  if (!uuid) return
+  try {
+    const tasks = await rpcCall('public:getPublicPingTasks')
+    if (!Array.isArray(tasks)) return
+    const relevant = tasks.filter(t => t.clients && t.clients.includes(uuid))
+    if (!relevant.length) return
+    await fetchPingRecords(relevant)
+  } catch {}
+}
+
+async function fetchPingRecords(tasks) {
+  const results = await Promise.all(
+    tasks.map(async (task) => {
+      try {
+        const data = await rpcCall('public:getPingRecords', {
+          uuid,
+          task_id: String(task.id),
+          hours: String(pingHours.value)
         })
-        .catch(() => ({ id: task.id, name: task.name, avg: -1, min: -1, max: -1, loss: 100 }))
-    )
-  ).then(results => {
-    pingTasks.value = results
-  })
+
+        let avg = -1, min = -1, max = -1, loss = 0
+
+        // 优先使用 tasks 数组中的聚合统计
+        if (data.tasks && data.tasks.length) {
+          const t = data.tasks[0]
+          if (t.avg !== undefined) avg = Math.round(t.avg)
+          if (t.min !== undefined) min = Math.round(t.min)
+          if (t.max !== undefined) max = Math.round(t.max)
+          if (t.loss !== undefined) loss = Math.round(t.loss)
+        } else if (data.basic_info && data.basic_info.length) {
+          const b = data.basic_info[0]
+          if (b.min !== undefined) min = Math.round(b.min)
+          if (b.max !== undefined) max = Math.round(b.max)
+          if (b.loss !== undefined) loss = Math.round(b.loss)
+        }
+
+        // 如果没有 avg 但有 records，手动计算
+        if (avg < 0 && data.records && data.records.length) {
+          const vals = data.records
+            .map(r => r.value)
+            .filter(v => v >= 0)
+          if (vals.length) {
+            avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
+          }
+        }
+
+        return { id: task.id, name: task.name, avg, min, max, loss }
+      } catch {
+        return { id: task.id, name: task.name, avg: -1, min: -1, max: -1, loss: 100 }
+      }
+    })
+  )
+  pingTasks.value = results
 }
 
 function changePingHours(h) {
@@ -195,98 +248,40 @@ function pingBarWidth(avg) {
   return Math.min(100, (avg / 300) * 100)
 }
 
-function fetchNodeInfo() {
-  fetch('/api/nodes')
-    .then(res => res.json())
-    .then(data => {
-      const list = data.data || []
-      const node = list.find(n => n.uuid === uuid)
-      if (node) {
-        nodeName.value = node.name
-        nodeInfo.value = node
-      }
-    })
-    .catch(() => {})
-}
-
-function fetchRecent() {
-  if (!uuid) return
-  fetch(`/api/recent/${uuid}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.data && data.data.length) {
-        const latest = data.data[data.data.length - 1]
-        metrics.value = latest
-        online.value = true
-      }
-    })
-    .catch(() => {})
-}
-
-function connectWs() {
-  if (!uuid) return
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  ws = new WebSocket(`${protocol}//${location.host}/api/clients`)
-
-  ws.onopen = () => {
-    ws.send(`get ${uuid}`)
-    wsTimer = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) ws.send(`get ${uuid}`)
-    }, 3000)
-  }
-
-  ws.onmessage = (event) => {
-    try {
-      const msg = JSON.parse(event.data)
-      const payload = msg.data || msg
-      if (payload.online) {
-        online.value = payload.online.includes(uuid)
-      }
-      if (payload.data && payload.data[uuid]) {
-        metrics.value = payload.data[uuid]
-      }
-    } catch {}
-  }
-
-  ws.onclose = () => setTimeout(connectWs, 5000)
-  ws.onerror = () => ws.close()
-}
-
 const cpuPercent = computed(() => {
   if (!metrics.value) return 0
-  return Math.min(100, Math.round(metrics.value.cpu?.usage ?? 0))
+  return Math.min(100, Math.round(metrics.value.cpu ?? 0))
 })
 
-const memUsed = computed(() => metrics.value?.ram?.used ?? 0)
-const memTotal = computed(() => metrics.value?.ram?.total ?? 0)
+const memUsed = computed(() => metrics.value?.ram ?? 0)
+const memTotal = computed(() => metrics.value?.ram_total ?? 0)
 const memPercent = computed(() => {
   if (!memTotal.value) return 0
   return Math.round((memUsed.value / memTotal.value) * 100)
 })
 
-const diskUsed = computed(() => metrics.value?.disk?.used ?? 0)
-const diskTotal = computed(() => metrics.value?.disk?.total ?? 0)
+const diskUsed = computed(() => metrics.value?.disk ?? 0)
+const diskTotal = computed(() => metrics.value?.disk_total ?? 0)
 const diskPercent = computed(() => {
   if (!diskTotal.value) return 0
   return Math.round((diskUsed.value / diskTotal.value) * 100)
 })
 
-const netRx = computed(() => metrics.value?.network?.down ?? 0)
-const netTx = computed(() => metrics.value?.network?.up ?? 0)
+const netRx = computed(() => metrics.value?.net_in ?? 0)
+const netTx = computed(() => metrics.value?.net_out ?? 0)
 const connections = computed(() => {
-  const c = metrics.value?.connections
-  if (!c) return 0
-  return (c.tcp ?? 0) + (c.udp ?? 0)
+  const tcp = metrics.value?.connections ?? 0
+  const udp = metrics.value?.connections_udp ?? 0
+  return tcp + udp
 })
 const processes = computed(() => metrics.value?.process ?? 0)
 
 const loadAvg = computed(() => {
-  const load = metrics.value?.load
-  if (!load) return ['-', '-', '-']
+  if (!metrics.value) return ['-', '-', '-']
   return [
-    (load.load1 ?? 0).toFixed(2),
-    (load.load5 ?? 0).toFixed(2),
-    (load.load15 ?? 0).toFixed(2)
+    (metrics.value.load ?? 0).toFixed(2),
+    (metrics.value.load5 ?? 0).toFixed(2),
+    (metrics.value.load15 ?? 0).toFixed(2)
   ]
 })
 

@@ -9,14 +9,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { rpcCall } from '@/utils/rpc'
 
 const version = ref('')
 
 onMounted(() => {
-  fetch('/api/version')
-    .then(res => res.json())
+  rpcCall('public:getVersion')
     .then(data => {
-      version.value = data.version || data.data?.version || ''
+      version.value = data.version || ''
     })
     .catch(() => {})
 })

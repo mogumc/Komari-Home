@@ -65,6 +65,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { rpcCall } from '@/utils/rpc'
 
 const route = useRoute()
 const navHidden = ref(false)
@@ -151,10 +152,8 @@ function doLogin() {
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
 
-  fetch('/api/public')
-    .then(res => res.json())
-    .then(data => {
-      const d = data.data || data
+  rpcCall('public:getPublicSettings')
+    .then(d => {
       if (d.sitename) siteName.value = d.sitename
       disablePasswordLogin.value = !!d.disable_password_login
       oauthEnable.value = !!d.oauth_enable
@@ -162,8 +161,7 @@ onMounted(() => {
     })
     .catch(() => {})
 
-  fetch('/api/me')
-    .then(res => res.json())
+  rpcCall('public:getMe')
     .then(data => {
       loggedIn.value = data.logged_in === true
     })

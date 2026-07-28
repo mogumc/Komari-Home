@@ -1,4 +1,5 @@
 import { ref, onMounted } from 'vue'
+import { rpcCall } from '@/utils/rpc'
 
 const CACHE_KEY = 'komari_theme_settings'
 
@@ -47,8 +48,7 @@ function loadFromCache() {
 
 async function fetchSettings() {
   try {
-    const res = await fetch('/api/public')
-    const data = await res.json()
+    const data = await rpcCall('public:getPublicSettings')
     const raw = data.theme_settings || {}
     const parsed = parseSettings(raw)
     localStorage.setItem(CACHE_KEY, JSON.stringify(parsed))
