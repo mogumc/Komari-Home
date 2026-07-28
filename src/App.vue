@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <!-- 背景 -->
-    <div class="background"></div>
+    <div class="background" :style="bgStyle"></div>
 
     <!-- 遮罩层 -->
     <Mask />
@@ -26,9 +26,20 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import Mask from '@/pages/Layout/Mask.vue'
 import NavBar from '@/pages/Layout/NavBar.vue'
 import Foot from '@/pages/Layout/Footer.vue'
+import { useThemeSettings } from '@/composables/useThemeSettings'
+
+const { settings } = useThemeSettings()
+
+const bgStyle = computed(() => {
+  const url = settings.value.backgroundImageUrl
+  return url
+    ? { backgroundImage: `url('${url}')` }
+    : {}
+})
 </script>
 
 <style>
@@ -55,7 +66,7 @@ import Foot from '@/pages/Layout/Footer.vue'
   left: 0;
   width: 100%;
   height: 100%;
-  background: url('https://t.alcy.cc/ycy/') no-repeat center center fixed;
+  background: #1a1a2e no-repeat center center fixed;
   background-size: cover;
   z-index: -2;
 }

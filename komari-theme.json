@@ -1,13 +1,28 @@
 {
     "name": "Komari Home",
-    "short": "komarihome", 
+    "short": "komarihome",
     "description": "A Komari Web Theme with HomePage",
     "version": "1.0.0",
     "author": "mogumc",
     "url": "https://github.com/mogumc/Komari-Home",
     "preview": "preview.png",
-    "configuration":{
-        "type":"managed",
-        "data":[]
+    "configuration": {
+        "type": "managed",
+        "data": [
+            { "name": { "zh-CN": "基础信息", "en": "General" }, "type": "title" },
+            { "key": "avatarUrl", "name": { "zh-CN": "头像链接", "en": "Avatar URL" }, "type": "string", "default": "", "help": { "zh-CN": "首页头像图片的完整 URL，留空则不显示" } },
+            { "key": "displayName", "name": { "zh-CN": "显示名称", "en": "Display Name" }, "type": "string", "default": "", "help": { "zh-CN": "首页展示的用户名/昵称" } },
+            { "key": "bio", "name": { "zh-CN": "个人简介", "en": "Bio" }, "type": "string", "default": "", "help": { "zh-CN": "简短的自我介绍或签名" } },
+            { "key": "location", "name": { "zh-CN": "所在地", "en": "Location" }, "type": "string", "default": "", "help": { "zh-CN": "如：中国 · 上海" } },
+            { "name": { "zh-CN": "社交链接", "en": "Social Links" }, "type": "title" },
+            { "key": "socialLinks", "name": { "zh-CN": "社交链接 (JSON)", "en": "Social Links (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/url。如 [{\"name\":\"GitHub\",\"icon\":\"github\",\"url\":\"https://github.com/xxx\"}]" } },
+            { "name": { "zh-CN": "首页网址导航", "en": "Home Sites" }, "type": "title" },
+            { "key": "homeSites", "name": { "zh-CN": "首页站点列表 (JSON)", "en": "Home Sites (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/url。如 [{\"name\":\"博客\",\"icon\":\"bootstrap-fill\",\"url\":\"https://blog.example.com\"}]" } },
+            { "name": { "zh-CN": "网址导航页面", "en": "Websites Page" }, "type": "title" },
+            { "key": "webSites", "name": { "zh-CN": "网址导航列表 (JSON)", "en": "Website List (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/desc/url。如 [{\"name\":\"博客\",\"icon\":\"bootstrap-fill\",\"desc\":\"技术文章与日常记录\",\"url\":\"https://blog.example.com\"}]" } },
+            { "name": { "zh-CN": "外观设置", "en": "Appearance" }, "type": "title" },
+            { "key": "backgroundImageUrl", "name": { "zh-CN": "背景图片链接", "en": "Background Image URL" }, "type": "string", "default": "", "help": { "zh-CN": "全屏背景图片的完整 URL，留空则不显示背景图" } },
+            { "key": "enableHitokoto", "name": { "zh-CN": "启用一言", "en": "Enable Hitokoto" }, "type": "switch", "default": true, "help": { "zh-CN": "是否在首页显示一言引用模块" } }
+        ]
     }
 }

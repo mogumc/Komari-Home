@@ -1,16 +1,16 @@
 <template>
   <div class="container">
     <div class="page-header">
-      <div class="avatar">
-        <img src="https://avatars.githubusercontent.com/u/67809394" alt="头像">
+      <div class="avatar" v-if="settings.avatarUrl">
+        <img :src="settings.avatarUrl" alt="头像">
       </div>
       <div class="header-info">
-        <div class="name">Name</div>
-        <div class="bio">中国 · 上海 · 前端开发工程师</div>
+        <div class="name">{{ settings.displayName || '&nbsp;' }}</div>
+        <div class="bio">{{ subtitle }}</div>
       </div>
-      <div class="socials">
+      <div class="socials" v-if="settings.socialLinks && settings.socialLinks.length">
         <a
-          v-for="item in socials"
+          v-for="item in settings.socialLinks"
           :key="item.name"
           class="social-block"
           :href="item.url"
@@ -24,26 +24,33 @@
 
     <div class="content">
       <div class="top-modules">
-        <Hitokoto />
+        <Hitokoto v-if="hitokotoEnabled" />
         <Clock />
       </div>
-      <SiteList :sites="sites" />
+      <SiteList :sites="settings.homeSites || []" />
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import Hitokoto from '@/pages/Layout/Hitokoto.vue'
 import Clock from '@/pages/Layout/Clock.vue'
 import SiteList from '@/pages/Layout/SiteList.vue'
+import { useThemeSettings } from '@/composables/useThemeSettings'
 
-const sites = [
-  { name: "博客", icon: 'bootstrap-fill', url: 'https://blog.moguq.top' },
-]
+const { settings } = useThemeSettings()
 
-const socials = [
-  { name: "GitHub", icon: 'github', url: 'https://github.com/mogumc' },
-]
+const subtitle = computed(() => {
+  const parts = []
+  if (settings.value.location) parts.push(settings.value.location)
+  if (settings.value.bio) parts.push(settings.value.bio)
+  return parts.join(' · ') || '&nbsp;'
+})
+
+const hitokotoEnabled = computed(() => {
+  return settings.value.enableHitokoto !== false
+})
 </script>
 
 <style scoped>

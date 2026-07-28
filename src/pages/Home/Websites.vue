@@ -6,7 +6,7 @@
 
     <div class="card-grid">
       <div
-        v-for="item in sites"
+        v-for="item in settings.webSites"
         :key="item.name"
         class="site-card"
         @click="goto(item.url)"
@@ -21,14 +21,18 @@
       </div>
     </div>
 
+    <div v-if="!settings.webSites || !settings.webSites.length" class="empty-hint">
+      暂无导航站点，请在管理后台配置
+    </div>
+
     <div style="height: 60px"></div>
   </div>
 </template>
 
 <script setup>
-const sites = [
-  { name: "博客", icon: 'bootstrap-fill', desc: '技术文章与日常记录', url: 'https://blog.moguq.top' },
-]
+import { useThemeSettings } from '@/composables/useThemeSettings'
+
+const { settings } = useThemeSettings()
 
 const goto = (url) => {
   const newTab = window.open(url, '_blank')
@@ -124,6 +128,12 @@ const goto = (url) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.empty-hint {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  padding: 2rem;
 }
 
 @media (max-width: 600px) {
