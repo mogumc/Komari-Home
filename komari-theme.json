@@ -18,7 +18,7 @@
             { "key": "socialLinks", "name": { "zh-CN": "社交链接 (JSON)", "en": "Social Links (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/url" } },
             { "name": { "zh-CN": "首页快速链接", "en": "Home Quick Links" }, "type": "title" },
             { "key": "enableHomeSites", "name": { "zh-CN": "启用", "en": "Enable" }, "type": "switch", "default": true },
-            { "key": "homeSites", "name": { "zh-CN": "站点列表 (JSON)", "en": "Site List (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/url" } },
+            { "key": "homeSites", "name": { "zh-CN": "链接列表 (JSON)", "en": "Link List (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/url" } },
             { "name": { "zh-CN": "RSS 订阅", "en": "RSS Feed" }, "type": "title" },
             { "key": "enableRssFeed", "name": { "zh-CN": "启用", "en": "Enable" }, "type": "switch", "default": false },
             { "key": "rssFeedUrl", "name": { "zh-CN": "订阅地址", "en": "Feed URL" }, "type": "string", "default": "", "help": { "zh-CN": "RSS/Atom 订阅源 URL" } },
