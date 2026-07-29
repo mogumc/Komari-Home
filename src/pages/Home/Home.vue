@@ -26,7 +26,7 @@
     </div>
 
     <div class="content">
-      <div class="top-modules">
+      <div class="top-modules" v-if="hitokotoEnabled || showClock">
         <Hitokoto v-if="hitokotoEnabled" />
         <Clock v-if="showClock" />
       </div>
