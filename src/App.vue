@@ -49,6 +49,14 @@ const bgStyle = computed(() => {
   margin: 0;
   padding: 0;
 }
+
+/* 隐藏滚动条但允许滚动，防止页面抖动 */
+html {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  display: none;
+}
 </style>
 
 <style scoped>
