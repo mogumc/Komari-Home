@@ -5,16 +5,16 @@
         <i class="bi bi-cpu-fill"></i> 服务器监控
         <span class="status-dot" :class="wsConnected ? 'online' : 'offline'"></span>
       </div>
-      <div class="tag-filter" v-if="tagList.length > 1">
-        <button class="tag-scroll" v-if="tagScroll > 0" @click="tagScroll--">&lt;</button>
+      <div class="group-filter" v-if="groupList.length > 1">
+        <button class="group-scroll" v-if="groupScroll > 0" @click="groupScroll--">&lt;</button>
         <button
-          v-for="(t, i) in visibleTags"
-          :key="t"
-          class="tag-btn"
-          :class="{ active: activeTag === t }"
-          @click="activeTag = t"
-        >{{ t === '__all__' ? '全部' : t }}</button>
-        <button class="tag-scroll" v-if="tagScroll + 3 < tagList.length" @click="tagScroll++">&gt;</button>
+          v-for="g in visibleGroups"
+          :key="g"
+          class="group-btn"
+          :class="{ active: activeGroup === g }"
+          @click="activeGroup = g"
+        >{{ g === '__all__' ? '全部' : g || '未分组' }}</button>
+        <button class="group-scroll" v-if="groupScroll + 3 < groupList.length" @click="groupScroll++">&gt;</button>
       </div>
     </div>
 
@@ -35,6 +35,9 @@
         <div class="card-meta">
           <span><i class="bi bi-hdd"></i> {{ node.os || '未知' }}</span>
           <span><i class="bi bi-geo-alt"></i> {{ node.region || '未知' }}</span>
+        </div>
+        <div class="card-tags" v-if="getTags(node).length">
+          <span class="tag-label" v-for="t in getTags(node)" :key="t">{{ t }}</span>
         </div>
 
         <div class="card-metrics" v-if="liveData[node.uuid]">
@@ -84,27 +87,32 @@ const router = useRouter()
 const nodes = ref([])
 const liveData = reactive({})
 const wsConnected = ref(false)
-const activeTag = ref('__all__')
-const tagScroll = ref(0)
+const activeGroup = ref('__all__')
+const groupScroll = ref(0)
 let socket = null
 let pollTimer = null
 
 const { settings } = useThemeSettings()
 
-// 标签列表：全部 + 各节点去重 tag
-const tagList = computed(() => {
+// 分组列表：全部 + 各节点去重 group
+const groupList = computed(() => {
   const set = new Set(['__all__'])
   for (const n of nodes.value) {
-    const tags = (n.tags || '').split(';').map(t => t.trim()).filter(Boolean)
-    tags.forEach(t => set.add(t))
+    const g = (n.group || '').trim()
+    if (g) set.add(g)
   }
   return [...set]
 })
 
-// 可见标签（最多 3 个，受 tagScroll 控制）
-const visibleTags = computed(() => {
-  return tagList.value.slice(tagScroll.value, tagScroll.value + 3)
+// 可见分组（最多 3 个，受 groupScroll 控制）
+const visibleGroups = computed(() => {
+  return groupList.value.slice(groupScroll.value, groupScroll.value + 3)
 })
+
+// 解析节点 tags
+function getTags(node) {
+  return (node.tags || '').split(';').map(t => t.trim()).filter(Boolean)
+}
 
 // 排序配置
 const sortBy = computed(() => settings.value.komariSortBy || '原顺序')
@@ -114,12 +122,9 @@ const onlineFirst = computed(() => settings.value.komariOnlineFirst !== false)
 const displayNodes = computed(() => {
   let list = [...nodes.value]
 
-  // 标签筛选
-  if (activeTag.value !== '__all__') {
-    list = list.filter(n => {
-      const tags = (n.tags || '').split(';').map(t => t.trim())
-      return tags.includes(activeTag.value)
-    })
+  // 分组筛选
+  if (activeGroup.value !== '__all__') {
+    list = list.filter(n => (n.group || '').trim() === activeGroup.value)
   }
 
   // 排序
@@ -295,13 +300,13 @@ function goInstance(uuid) {
   background: #f44336;
 }
 
-.tag-filter {
+.group-filter {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.tag-btn {
+.group-btn {
   padding: 0.25rem 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 6px;
@@ -314,18 +319,18 @@ function goInstance(uuid) {
   white-space: nowrap;
 }
 
-.tag-btn:hover {
+.group-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 
-.tag-btn.active {
+.group-btn.active {
   background: rgba(102, 204, 255, 0.2);
   border-color: rgba(102, 204, 255, 0.4);
   color: #66ccff;
 }
 
-.tag-scroll {
+.group-scroll {
   padding: 0.25rem 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
@@ -336,8 +341,24 @@ function goInstance(uuid) {
   transition: color 0.2s;
 }
 
-.tag-scroll:hover {
+.group-scroll:hover {
   color: #fff;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.tag-label {
+  font-size: 0.7rem;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(102, 204, 255, 0.15);
+  color: rgba(102, 204, 255, 0.8);
+  border: 1px solid rgba(102, 204, 255, 0.2);
 }
 
 .server-grid {
