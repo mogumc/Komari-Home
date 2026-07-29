@@ -36,12 +36,7 @@ jobs:
 
       - name: Package
         run: |
-          mkdir -p release/komari-home
-          cp -r dist/* release/komari-home/
-          cp komari-theme.json release/komari-home/
-          cp preview.png release/komari-home/ 2>/dev/null || true
-          cd release
-          zip -r "../komari-home-v${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.hash }}.zip" komari-home
+          zip -r "komari-home-v${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.hash }}.zip" dist komari-theme.json preview.png
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
