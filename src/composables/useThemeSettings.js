@@ -11,10 +11,8 @@ function parseJSONField(val) {
   if (Array.isArray(val)) return val
   if (typeof val !== 'string' || !val.trim()) return []
 
-  // 规范化 richtext 中常见的 JS 对象写法：键名无引号 + 值可能单引号
-  const normalized = val
-    .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')  // name: → "name":
-    .replace(/'/g, '"')                               // 'value' → "value"
+  // 键名加引号 name: → "name":
+  const normalized = val.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')
 
   try {
     const r = JSON.parse(normalized)
