@@ -15,14 +15,22 @@
             { "key": "bio", "name": { "zh-CN": "个人简介", "en": "Bio" }, "type": "string", "default": "", "help": { "zh-CN": "简短的自我介绍或签名" } },
             { "key": "location", "name": { "zh-CN": "所在地", "en": "Location" }, "type": "string", "default": "", "help": { "zh-CN": "如：中国 · 上海" } },
             { "name": { "zh-CN": "社交链接", "en": "Social Links" }, "type": "title" },
-            { "key": "socialLinks", "name": { "zh-CN": "社交链接 (JSON)", "en": "Social Links (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/url。如 [{\"name\":\"GitHub\",\"icon\":\"github\",\"url\":\"https://github.com/xxx\"}]" } },
-            { "name": { "zh-CN": "首页快速链接", "en": "Home Sites" }, "type": "title" },
-            { "key": "homeSites", "name": { "zh-CN": "首页站点列表 (JSON)", "en": "Home Sites (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/url。如 [{\"name\":\"博客\",\"icon\":\"bootstrap-fill\",\"url\":\"https://blog.example.com\"}]" } },
-            { "name": { "zh-CN": "网址导航链接", "en": "Websites Page Links" }, "type": "title" },
-            { "key": "webSites", "name": { "zh-CN": "网址导航列表 (JSON)", "en": "Website List (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/desc/url。如 [{\"name\":\"博客\",\"icon\":\"bootstrap-fill\",\"desc\":\"技术文章与日常记录\",\"url\":\"https://blog.example.com\"}]" } },
+            { "key": "socialLinks", "name": { "zh-CN": "社交链接 (JSON)", "en": "Social Links (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/url" } },
+            { "name": { "zh-CN": "首页快速链接", "en": "Home Quick Links" }, "type": "title" },
+            { "key": "enableHomeSites", "name": { "zh-CN": "启用", "en": "Enable" }, "type": "switch", "default": true },
+            { "key": "homeSites", "name": { "zh-CN": "站点列表 (JSON)", "en": "Site List (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/url" } },
+            { "name": { "zh-CN": "RSS 订阅", "en": "RSS Feed" }, "type": "title" },
+            { "key": "enableRssFeed", "name": { "zh-CN": "启用", "en": "Enable" }, "type": "switch", "default": false },
+            { "key": "rssFeedUrl", "name": { "zh-CN": "订阅地址", "en": "Feed URL" }, "type": "string", "default": "", "help": { "zh-CN": "RSS/Atom 订阅源 URL" } },
+            { "name": { "zh-CN": "自定义 HTML", "en": "Custom HTML" }, "type": "title" },
+            { "key": "enableCustomHtml", "name": { "zh-CN": "启用", "en": "Enable" }, "type": "switch", "default": false },
+            { "key": "customHtml", "name": { "zh-CN": "HTML 内容", "en": "HTML Content" }, "type": "richtext", "default": "", "help": { "zh-CN": "支持任意 HTML 片段，将直接渲染在首页" } },
+            { "name": { "zh-CN": "网址导航", "en": "Websites Page" }, "type": "title" },
+            { "key": "webSites", "name": { "zh-CN": "链接列表 (JSON)", "en": "Link List (JSON)" }, "type": "richtext", "default": "[]", "help": { "zh-CN": "JSON数组，每项含 name/icon/desc/url" } },
             { "name": { "zh-CN": "外观设置", "en": "Appearance" }, "type": "title" },
             { "key": "backgroundImageUrl", "name": { "zh-CN": "背景图片链接", "en": "Background Image URL" }, "type": "string", "default": "", "help": { "zh-CN": "全屏背景图片的完整 URL，留空则不显示背景图" } },
-            { "key": "enableHitokoto", "name": { "zh-CN": "启用一言", "en": "Enable Hitokoto" }, "type": "switch", "default": true, "help": { "zh-CN": "是否在首页显示一言引用模块" } }
+            { "key": "enableClock", "name": { "zh-CN": "启用时钟", "en": "Enable Clock" }, "type": "switch", "default": true },
+            { "key": "enableHitokoto", "name": { "zh-CN": "启用一言", "en": "Enable Hitokoto" }, "type": "switch", "default": true }
         ]
     }
 }
