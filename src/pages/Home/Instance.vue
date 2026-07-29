@@ -176,9 +176,10 @@ function connectAndPoll() {
     if (socket.readyState !== WebSocket.OPEN) return
     socket.call('common:getNodesLatestStatus', { uuid }, 8000)
       .then(data => {
-        if (data && data[uuid]) {
-          metrics.value = data[uuid]
-          online.value = data[uuid].online === true
+        const status = data && data.online !== undefined ? data : (data && data[uuid])
+        if (status) {
+          metrics.value = status
+          online.value = status.online === true
         }
       })
       .catch(() => {})
