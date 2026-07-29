@@ -28,9 +28,11 @@
     <div class="content">
       <div class="top-modules">
         <Hitokoto v-if="hitokotoEnabled" />
-        <Clock />
+        <Clock v-if="showClock" />
       </div>
-      <SiteList :sites="settings.homeSites || []" />
+      <RssFeed v-if="showRssFeed" :url="settings.rssFeedUrl" />
+      <CustomHtml v-if="showCustomHtml" :html="settings.customHtml" />
+      <SiteList v-if="showHomeSites" :sites="settings.homeSites || []" />
     </div>
   </div>
 </template>
@@ -40,13 +42,17 @@ import { computed } from 'vue'
 import Hitokoto from '@/pages/Layout/Hitokoto.vue'
 import Clock from '@/pages/Layout/Clock.vue'
 import SiteList from '@/pages/Layout/SiteList.vue'
+import RssFeed from '@/pages/Layout/RssFeed.vue'
+import CustomHtml from '@/pages/Layout/CustomHtml.vue'
 import { useThemeSettings } from '@/composables/useThemeSettings'
 
 const { settings } = useThemeSettings()
 
-const hitokotoEnabled = computed(() => {
-  return settings.value.enableHitokoto !== false
-})
+const hitokotoEnabled = computed(() => settings.value.enableHitokoto !== false)
+const showHomeSites = computed(() => settings.value.enableHomeSites !== false)
+const showRssFeed = computed(() => settings.value.enableRssFeed === true && settings.value.rssFeedUrl)
+const showCustomHtml = computed(() => settings.value.enableCustomHtml === true && settings.value.customHtml)
+const showClock = computed(() => settings.value.enableClock !== false)
 </script>
 
 <style scoped>
