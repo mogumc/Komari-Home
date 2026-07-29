@@ -18,9 +18,9 @@
       </div>
     </div>
 
-    <div class="server-grid">
+    <div class="server-grid" ref="gridRef">
       <div
-        v-for="node in displayNodes"
+        v-for="node in paginatedNodes"
         :key="node.uuid"
         class="server-card"
         @click="goInstance(node.uuid)"
@@ -68,6 +68,15 @@
       </div>
     </div>
 
+    <!-- 分页 -->
+    <div class="pagination" v-if="totalPages > 1">
+      <button class="page-btn" :disabled="page === 1" @click="page = 1">&laquo;</button>
+      <button class="page-btn" :disabled="page === 1" @click="page--">&lt;</button>
+      <span class="page-info">{{ page }} / {{ totalPages }}</span>
+      <button class="page-btn" :disabled="page === totalPages" @click="page++">&gt;</button>
+      <button class="page-btn" :disabled="page === totalPages" @click="page = totalPages">&raquo;</button>
+    </div>
+
     <div v-if="!nodes.length" class="empty-state">
       <i class="bi bi-inbox"></i>
       <p>暂无服务器数据</p>
@@ -78,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { rpcCall, createRpcSocket } from '@/utils/rpc'
 import { useThemeSettings } from '@/composables/useThemeSettings'
@@ -89,8 +98,12 @@ const liveData = reactive({})
 const wsConnected = ref(false)
 const activeGroup = ref('__all__')
 const groupScroll = ref(0)
+const page = ref(1)
+const gridRef = ref(null)
+const columnsPerRow = ref(3)
 let socket = null
 let pollTimer = null
+let resizeObs = null
 
 const { settings } = useThemeSettings()
 
@@ -146,14 +159,41 @@ const displayNodes = computed(() => {
   return list
 })
 
+// 分页
+const rowsPerPage = computed(() => {
+  const v = parseInt(settings.value.komariRowsPerPage)
+  return v > 0 ? v : 3
+})
+const itemsPerPage = computed(() => Math.max(1, rowsPerPage.value * columnsPerRow.value))
+const totalPages = computed(() => Math.ceil(displayNodes.value.length / itemsPerPage.value) || 1)
+const paginatedNodes = computed(() => {
+  const start = (page.value - 1) * itemsPerPage.value
+  return displayNodes.value.slice(start, start + itemsPerPage.value)
+})
+
+// 切换筛选/分组时重置页码
+watch([activeGroup, () => settings.value.komariSortBy], () => {
+  page.value = 1
+})
+
 onMounted(() => {
   fetchNodes()
   connectAndPoll()
+  nextTick(() => {
+    if (gridRef.value) {
+      resizeObs = new ResizeObserver(entries => {
+        const w = entries[0].contentRect.width
+        columnsPerRow.value = Math.max(1, Math.floor((w + 16) / 336))
+      })
+      resizeObs.observe(gridRef.value)
+    }
+  })
 })
 
 onUnmounted(() => {
   if (socket) socket.close()
   if (pollTimer) clearInterval(pollTimer)
+  if (resizeObs) resizeObs.disconnect()
 })
 
 async function fetchNodes() {
@@ -488,6 +528,40 @@ function goInstance(uuid) {
   color: rgba(255, 255, 255, 0.5);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: 0.6rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.page-btn {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.page-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0 0.5rem;
 }
 
 .empty-state {
