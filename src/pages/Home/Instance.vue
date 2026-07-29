@@ -6,6 +6,24 @@
       <span class="status-badge" :class="online ? 'on' : 'off'">{{ online ? '在线' : '离线' }}</span>
     </div>
 
+    <!-- 硬件信息 -->
+    <div class="hardware-grid" v-if="nodeInfo.cpu_name">
+      <div class="glass-card hw-card">
+        <h4><i class="bi bi-cpu"></i> 处理器</h4>
+        <div class="hw-val">{{ nodeInfo.cpu_name || '-' }}</div>
+        <div class="sub-info">{{ nodeInfo.cpu_cores || 0 }} 逻辑核心{{ nodeInfo.cpu_physical_cores ? ' / ' + nodeInfo.cpu_physical_cores + ' 物理核心' : '' }}</div>
+      </div>
+      <div class="glass-card hw-card">
+        <h4><i class="bi bi-motherboard"></i> 系统</h4>
+        <div class="hw-val">{{ nodeInfo.os || '-' }}</div>
+        <div class="sub-info">{{ nodeInfo.arch || '-' }}{{ nodeInfo.virtualization ? ' · ' + nodeInfo.virtualization : '' }}</div>
+      </div>
+      <div class="glass-card hw-card" v-if="nodeInfo.gpu_name">
+        <h4><i class="bi bi-gpu-card"></i> GPU</h4>
+        <div class="hw-val">{{ nodeInfo.gpu_name }}</div>
+      </div>
+    </div>
+
     <div class="detail-grid" v-if="metrics">
       <!-- CPU -->
       <div class="glass-card">
@@ -63,7 +81,7 @@
     <!-- Ping 延迟 -->
     <div class="ping-section" v-if="pingTasks.length">
       <div class="section-title">
-        <i class="bi bi-activity"></i> 延迟监控
+        <span class="title-left"><i class="bi bi-activity"></i> 延迟监控</span>
         <div class="time-btns">
           <button :class="{ active: pingHours === 1 }" @click="changePingHours(1)">1h</button>
           <button :class="{ active: pingHours === 6 }" @click="changePingHours(6)">6h</button>
@@ -149,13 +167,15 @@ async function fetchRecent() {
 
 function connectAndPoll() {
   if (!uuid) return
+  if (socket) socket.close()
+  if (pollTimer) clearInterval(pollTimer)
+
   socket = createRpcSocket()
 
   const poll = () => {
     if (socket.readyState !== WebSocket.OPEN) return
     socket.call('common:getNodesLatestStatus', { uuid }, 8000)
       .then(data => {
-        // 返回 {[uuid]: NodeStatus}
         if (data && data[uuid]) {
           metrics.value = data[uuid]
           online.value = data[uuid].online === true
@@ -164,12 +184,17 @@ function connectAndPoll() {
       .catch(() => {})
   }
 
+  let checkAttempts = 0
   const checkOpen = () => {
     if (socket.readyState === WebSocket.OPEN) {
       poll()
       pollTimer = setInterval(poll, 3000)
-    } else {
+    } else if (checkAttempts < 30) {
+      checkAttempts++
       setTimeout(checkOpen, 300)
+    } else {
+      // 连接超时，重建
+      connectAndPoll()
     }
   }
   checkOpen()
@@ -356,6 +381,26 @@ function formatBytes(bytes) {
 .status-badge.off {
   background: rgba(244, 67, 54, 0.2);
   color: #e57373;
+}
+
+.hardware-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.hw-card {
+}
+
+.hw-val {
+  font-size: 1.05rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 0.3rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail-grid {

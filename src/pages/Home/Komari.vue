@@ -1,13 +1,26 @@
 <template>
   <div class="komari-page">
     <div class="page-header">
-      <i class="bi bi-cpu-fill"></i> 服务器监控
-      <span class="status-dot" :class="wsConnected ? 'online' : 'offline'"></span>
+      <div class="header-left">
+        <i class="bi bi-cpu-fill"></i> 服务器监控
+        <span class="status-dot" :class="wsConnected ? 'online' : 'offline'"></span>
+      </div>
+      <div class="tag-filter" v-if="tagList.length > 1">
+        <button class="tag-scroll" v-if="tagScroll > 0" @click="tagScroll--">&lt;</button>
+        <button
+          v-for="(t, i) in visibleTags"
+          :key="t"
+          class="tag-btn"
+          :class="{ active: activeTag === t }"
+          @click="activeTag = t"
+        >{{ t === '__all__' ? '全部' : t }}</button>
+        <button class="tag-scroll" v-if="tagScroll + 3 < tagList.length" @click="tagScroll++">&gt;</button>
+      </div>
     </div>
 
     <div class="server-grid">
       <div
-        v-for="node in nodes"
+        v-for="node in displayNodes"
         :key="node.uuid"
         class="server-card"
         @click="goInstance(node.uuid)"
@@ -62,16 +75,71 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { rpcCall, createRpcSocket } from '@/utils/rpc'
+import { useThemeSettings } from '@/composables/useThemeSettings'
 
 const router = useRouter()
 const nodes = ref([])
 const liveData = reactive({})
 const wsConnected = ref(false)
+const activeTag = ref('__all__')
+const tagScroll = ref(0)
 let socket = null
 let pollTimer = null
+
+const { settings } = useThemeSettings()
+
+// 标签列表：全部 + 各节点去重 tag
+const tagList = computed(() => {
+  const set = new Set(['__all__'])
+  for (const n of nodes.value) {
+    const tags = (n.tags || '').split(';').map(t => t.trim()).filter(Boolean)
+    tags.forEach(t => set.add(t))
+  }
+  return [...set]
+})
+
+// 可见标签（最多 3 个，受 tagScroll 控制）
+const visibleTags = computed(() => {
+  return tagList.value.slice(tagScroll.value, tagScroll.value + 3)
+})
+
+// 排序配置
+const sortBy = computed(() => settings.value.komariSortBy || '原顺序')
+const onlineFirst = computed(() => settings.value.komariOnlineFirst !== false)
+
+// 筛选 + 排序
+const displayNodes = computed(() => {
+  let list = [...nodes.value]
+
+  // 标签筛选
+  if (activeTag.value !== '__all__') {
+    list = list.filter(n => {
+      const tags = (n.tags || '').split(';').map(t => t.trim())
+      return tags.includes(activeTag.value)
+    })
+  }
+
+  // 排序
+  if (sortBy.value === '名字') {
+    list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  } else if (sortBy.value === '分类') {
+    list.sort((a, b) => (a.group || '').localeCompare(b.group || '') || (a.name || '').localeCompare(b.name || ''))
+  }
+
+  // 在线靠前
+  if (onlineFirst.value) {
+    list.sort((a, b) => {
+      const aOn = isOnline(a.uuid) ? 0 : 1
+      const bOn = isOnline(b.uuid) ? 0 : 1
+      return aOn - bOn
+    })
+  }
+
+  return list
+})
 
 onMounted(() => {
   fetchNodes()
@@ -86,7 +154,6 @@ onUnmounted(() => {
 async function fetchNodes() {
   try {
     const data = await rpcCall('common:getNodes')
-    // common:getNodes 无 uuid 时返回 {[uuid]: Client}
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       nodes.value = Object.values(data)
     } else if (Array.isArray(data)) {
@@ -96,6 +163,9 @@ async function fetchNodes() {
 }
 
 function connectAndPoll() {
+  if (socket) socket.close()
+  if (pollTimer) clearInterval(pollTimer)
+
   socket = createRpcSocket()
 
   const poll = () => {
@@ -103,7 +173,6 @@ function connectAndPoll() {
     socket.call('common:getNodesLatestStatus', {}, 8000)
       .then(data => {
         wsConnected.value = true
-        // common:getNodesLatestStatus 返回 {[uuid]: NodeStatus}
         if (data && typeof data === 'object') {
           for (const [uuid, status] of Object.entries(data)) {
             liveData[uuid] = status
@@ -115,14 +184,17 @@ function connectAndPoll() {
       })
   }
 
-  // 初始轮询
+  let checkAttempts = 0
   const checkOpen = () => {
     if (socket.readyState === WebSocket.OPEN) {
       wsConnected.value = true
       poll()
       pollTimer = setInterval(poll, 3000)
-    } else {
+    } else if (checkAttempts < 30) {
+      checkAttempts++
       setTimeout(checkOpen, 300)
+    } else {
+      connectAndPoll()
     }
   }
   checkOpen()
@@ -189,17 +261,21 @@ function goInstance(uuid) {
 
 .page-header {
   width: 100%;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 1.8rem;
   font-weight: bold;
   color: #fff;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
-  padding: 1rem 0;
+  padding: 0.6rem 1.5rem;
   border-radius: 12px;
+}
+
+.header-left {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 10px;
 }
 
@@ -217,6 +293,51 @@ function goInstance(uuid) {
 
 .status-dot.offline {
   background: #f44336;
+}
+
+.tag-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tag-btn {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  font-weight: normal;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tag-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.tag-btn.active {
+  background: rgba(102, 204, 255, 0.2);
+  border-color: rgba(102, 204, 255, 0.4);
+  color: #66ccff;
+}
+
+.tag-scroll {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: color 0.2s;
+}
+
+.tag-scroll:hover {
+  color: #fff;
 }
 
 .server-grid {
@@ -363,6 +484,12 @@ function goInstance(uuid) {
 @media (max-width: 700px) {
   .server-grid {
     grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 1.3rem;
   }
 }
 </style>
