@@ -30,6 +30,7 @@
             { "name": { "zh-CN": "监控页设置", "en": "Monitor Settings" }, "type": "title" },
             { "key": "komariSortBy", "name": { "zh-CN": "排序方式", "en": "Sort By" }, "type": "select", "options": "原顺序,分类,名字", "default": "原顺序", "help": { "zh-CN": "服务器列表的排序规则" } },
             { "key": "komariOnlineFirst", "name": { "zh-CN": "在线靠前", "en": "Online First" }, "type": "switch", "default": true, "help": { "zh-CN": "是否将在线服务器排在前面" } },
+            { "key": "komariRowsPerPage", "name": { "zh-CN": "每页行数", "en": "Rows Per Page" }, "type": "number", "default": 3, "help": { "zh-CN": "服务器列表每页最多显示行数" } },
             { "name": { "zh-CN": "外观设置", "en": "Appearance" }, "type": "title" },
             { "key": "backgroundImageUrl", "name": { "zh-CN": "背景图片链接", "en": "Background Image URL" }, "type": "string", "default": "", "help": { "zh-CN": "全屏背景图片的完整 URL，留空则不显示背景图" } },
             { "key": "enableClock", "name": { "zh-CN": "启用时钟", "en": "Enable Clock" }, "type": "switch", "default": true },
