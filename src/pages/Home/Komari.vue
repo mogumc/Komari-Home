@@ -314,6 +314,7 @@ function goInstance(uuid) {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.85rem;
   font-weight: normal;
+  line-height: 1.4;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
