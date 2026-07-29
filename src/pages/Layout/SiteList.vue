@@ -33,13 +33,12 @@ const goto = (url) => {
 
 <style scoped>
 .sites-container {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
 }
 
 .site-block {
-  width: 160px;
   background: rgba(255, 255, 255, 0.06);
   padding: 1rem;
   border-radius: 12px;
@@ -50,7 +49,6 @@ const goto = (url) => {
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  text-align: center;
   color: #eee;
   font-size: 2rem;
 }
@@ -62,11 +60,18 @@ const goto = (url) => {
 .site-title {
   font-size: 1rem;
   font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-@media (max-width: 480px) {
-  .site-block {
-    width: 100%;
-  }
+@media (max-width: 900px) {
+  .sites-container { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 700px) {
+  .sites-container { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 500px) {
+  .sites-container { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

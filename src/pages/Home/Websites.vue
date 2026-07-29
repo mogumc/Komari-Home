@@ -106,7 +106,7 @@ const goto = (url) => {
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  color: #66ccff;
+  color: #eee;
   flex-shrink: 0;
 }
 

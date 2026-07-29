@@ -5,8 +5,11 @@
         <img :src="settings.avatarUrl" alt="头像">
       </div>
       <div class="header-info">
-        <div class="name">{{ settings.displayName || '&nbsp;' }}</div>
-        <div class="bio">{{ subtitle }}</div>
+        <div class="name">
+          {{ settings.displayName || '&nbsp;' }}
+          <span v-if="settings.location" class="location">{{ settings.location }}</span>
+        </div>
+        <div class="bio">{{ settings.bio || '&nbsp;' }}</div>
       </div>
       <div class="socials" v-if="settings.socialLinks && settings.socialLinks.length">
         <a
@@ -40,13 +43,6 @@ import SiteList from '@/pages/Layout/SiteList.vue'
 import { useThemeSettings } from '@/composables/useThemeSettings'
 
 const { settings } = useThemeSettings()
-
-const subtitle = computed(() => {
-  const parts = []
-  if (settings.value.location) parts.push(settings.value.location)
-  if (settings.value.bio) parts.push(settings.value.bio)
-  return parts.join(' · ') || '&nbsp;'
-})
 
 const hitokotoEnabled = computed(() => {
   return settings.value.enableHitokoto !== false
@@ -98,6 +94,13 @@ const hitokotoEnabled = computed(() => {
   font-size: 1.3rem;
   font-weight: bold;
   color: #fff;
+}
+
+.location {
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 0.3rem;
 }
 
 .bio {

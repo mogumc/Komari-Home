@@ -6,6 +6,24 @@ const CACHE_KEY = 'komari_theme_settings'
 // JSON 字符串字段，需要从 theme_settings 中自动 parse
 const JSON_KEYS = ['socialLinks', 'homeSites', 'webSites']
 
+function parseJSONField(val) {
+  if (!val) return []
+  if (Array.isArray(val)) return val
+  if (typeof val !== 'string' || !val.trim()) return []
+
+  // 规范化 richtext 中常见的 JS 对象写法：键名无引号 + 值可能单引号
+  const normalized = val
+    .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')  // name: → "name":
+    .replace(/'/g, '"')                               // 'value' → "value"
+
+  try {
+    const r = JSON.parse(normalized)
+    return Array.isArray(r) ? r : []
+  } catch {
+    return []
+  }
+}
+
 // 模块级共享状态，同一页面多个组件共享一份数据
 const settings = ref({})
 const loading = ref(true)
@@ -14,20 +32,7 @@ let fetchPromise = null
 function parseSettings(raw) {
   const result = { ...raw }
   JSON_KEYS.forEach(key => {
-    const val = result[key]
-    if (typeof val === 'string' && val.trim()) {
-      try {
-        const parsed = JSON.parse(val)
-        if (Array.isArray(parsed)) {
-          result[key] = parsed
-        }
-      } catch {
-        result[key] = []
-      }
-    }
-    if (!Array.isArray(result[key])) {
-      result[key] = []
-    }
+    result[key] = parseJSONField(result[key])
   })
   return result
 }
