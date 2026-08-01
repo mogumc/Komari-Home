@@ -78,8 +78,8 @@
       <p>正在获取数据...</p>
     </div>
 
-    <!-- Ping 延迟 -->
-    <div class="ping-section" v-if="pingTasks.length">
+    <!-- 延迟柱状热点图 -->
+    <div class="ping-section" v-if="heatmapData.rows.length">
       <div class="section-title">
         <span class="title-left"><i class="bi bi-activity"></i> 延迟监控</span>
         <div class="time-btns">
@@ -88,21 +88,28 @@
           <button :class="{ active: pingHours === 24 }" @click="changePingHours(24)">24h</button>
         </div>
       </div>
-      <div class="ping-grid">
-        <div v-for="task in pingTasks" :key="task.id" class="glass-card ping-card">
-          <div class="ping-top">
-            <span class="ping-task-name">{{ task.name }}</span>
-            <span class="ping-val" :class="pingClass(task.avg)">
-              {{ task.avg >= 0 ? task.avg + ' ms' : '丢包' }}
-            </span>
-          </div>
-          <div class="ping-bar-container">
-            <div class="ping-bar-fill" :class="pingClass(task.avg)" :style="{ width: pingBarWidth(task.avg) + '%' }"></div>
-          </div>
-          <div class="ping-stats">
-            <span>最小: {{ task.min >= 0 ? task.min + 'ms' : '-' }}</span>
-            <span>最大: {{ task.max >= 0 ? task.max + 'ms' : '-' }}</span>
-            <span>丢包: {{ task.loss }}%</span>
+      <div class="ping-grid" :class="{ loading: pingLoading }">
+        <div v-for="row in heatmapData.rows" :key="row.name" class="glass-card ping-card">
+          <div class="ping-task-name">{{ row.name }}</div>
+          <div class="heatmap">
+            <div class="heatmap-bars">
+              <div
+                v-for="(cell, ci) in row.cells"
+                :key="ci"
+                class="heatmap-bar-wrap"
+                :title="cell.value !== null ? cell.value + 'ms' : '无数据'"
+              >
+                <div class="heatmap-bar" :style="{ height: cell.height + '%', background: cell.color }"></div>
+              </div>
+            </div>
+            <div class="heatmap-legend">
+              <span>丢包</span><span class="legend-swatch" style="background:rgba(158,158,158,0.5)"></span>
+              <span>&lt;30</span><span class="legend-swatch" style="background:rgba(76,175,80,0.8)"></span>
+              <span>30-80</span><span class="legend-swatch" style="background:rgba(139,195,74,0.7)"></span>
+              <span>80-150</span><span class="legend-swatch" style="background:rgba(255,235,59,0.7)"></span>
+              <span>150-300</span><span class="legend-swatch" style="background:rgba(255,152,0,0.7)"></span>
+              <span>&gt;300</span><span class="legend-swatch" style="background:rgba(244,67,54,0.8)"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -141,6 +148,8 @@ onUnmounted(() => {
 
 const pingTasks = ref([])
 const pingHours = ref(1)
+const pingLoading = ref(false)
+const pingCache = ref({})
 
 async function fetchNodeInfo() {
   if (!uuid) return
@@ -222,57 +231,80 @@ async function fetchPingRecords(tasks) {
           hours: String(pingHours.value)
         })
 
-        let avg = -1, min = -1, max = -1, loss = 0
+        const records = (data.records || []).map(r => ({
+          value: r.value,
+          time: r.created_at || r.time || ''
+        }))
 
-        // 优先使用 tasks 数组中的聚合统计
-        if (data.tasks && data.tasks.length) {
-          const t = data.tasks[0]
-          if (t.avg !== undefined) avg = Math.round(t.avg)
-          if (t.min !== undefined) min = Math.round(t.min)
-          if (t.max !== undefined) max = Math.round(t.max)
-          if (t.loss !== undefined) loss = Math.round(t.loss)
-        } else if (data.basic_info && data.basic_info.length) {
-          const b = data.basic_info[0]
-          if (b.min !== undefined) min = Math.round(b.min)
-          if (b.max !== undefined) max = Math.round(b.max)
-          if (b.loss !== undefined) loss = Math.round(b.loss)
-        }
-
-        // 如果没有 avg 但有 records，手动计算
-        if (avg < 0 && data.records && data.records.length) {
-          const vals = data.records
-            .map(r => r.value)
-            .filter(v => v >= 0)
-          if (vals.length) {
-            avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)
-          }
-        }
-
-        return { id: task.id, name: task.name, avg, min, max, loss }
+        return { id: task.id, name: task.name, records }
       } catch {
-        return { id: task.id, name: task.name, avg: -1, min: -1, max: -1, loss: 100 }
+        return { id: task.id, name: task.name, records: [] }
       }
     })
   )
   pingTasks.value = results
 }
 
-function changePingHours(h) {
+async function changePingHours(h) {
+  if (pingLoading.value) return
   pingHours.value = h
-  fetchPingData()
+  // 命中缓存则直接切
+  if (pingCache.value[h]) {
+    pingTasks.value = pingCache.value[h]
+    return
+  }
+  pingLoading.value = true
+  await fetchPingData()
+  pingCache.value[h] = pingTasks.value
+  pingLoading.value = false
 }
 
-function pingClass(avg) {
-  if (avg < 0) return 'lost'
-  if (avg < 50) return 'good'
-  if (avg < 150) return 'medium'
-  return 'bad'
+// ========== 柱状热点图 ==========
+const PING_BAR_MAX = 300
+
+function heatCellColor(val) {
+  if (val < 0) return 'rgba(158,158,158,0.5)'
+  if (val <= 30)  return 'rgba(76,175,80,0.8)'
+  if (val <= 80)  return 'rgba(139,195,74,0.7)'
+  if (val <= 150) return 'rgba(255,235,59,0.7)'
+  if (val <= 300) return 'rgba(255,152,0,0.7)'
+  return 'rgba(244,67,54,0.8)'
 }
 
-function pingBarWidth(avg) {
-  if (avg < 0) return 100
-  return Math.min(100, (avg / 300) * 100)
-}
+const heatmapData = computed(() => {
+  if (!pingTasks.value.length) return { rows: [] }
+
+  const now = Date.now()
+  const hours = pingHours.value
+  const bucketMs = hours <= 1 ? 5 * 60000 : hours <= 6 ? 30 * 60000 : 60 * 60000
+  const bucketCount = Math.ceil((hours * 3600000) / bucketMs)
+
+  const rows = pingTasks.value.map(task => {
+    const buckets = new Array(bucketCount).fill(null).map(() => ({ sum: 0, count: 0 }))
+
+    for (const r of task.records) {
+      const t = new Date(r.time).getTime()
+      const idx = Math.floor((t - (now - hours * 3600000)) / bucketMs)
+      if (idx >= 0 && idx < bucketCount) {
+        if (r.value >= 0) {
+          buckets[idx].sum += r.value
+          buckets[idx].count++
+        }
+      }
+    }
+
+    const cells = buckets.map(b => {
+      if (b.count === 0) return { value: null, height: 2, color: 'rgba(255,255,255,0.04)' }
+      const avg = Math.round(b.sum / b.count)
+      const h = Math.min(100, Math.max(3, (avg / PING_BAR_MAX) * 100))
+      return { value: avg, height: h, color: heatCellColor(avg) }
+    })
+
+    return { name: task.name, cells }
+  })
+
+  return { rows }
+})
 
 const cpuPercent = computed(() => {
   if (!metrics.value) return 0
@@ -529,56 +561,72 @@ function formatBytes(bytes) {
   gap: 1rem;
 }
 
-.ping-card {
-  padding: 1rem 1.2rem;
+.ping-grid.loading {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
-.ping-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.6rem;
+.ping-card {
+  padding: 0.8rem 1rem;
 }
 
 .ping-task-name {
   font-weight: bold;
   color: #fff;
-}
-
-.ping-val {
-  font-size: 1.1rem;
-  font-weight: bold;
-}
-
-.ping-val.good { color: #4caf50; }
-.ping-val.medium { color: #ff9800; }
-.ping-val.bad { color: #f44336; }
-.ping-val.lost { color: #9e9e9e; }
-
-.ping-bar-container {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  overflow: hidden;
+  font-size: 0.9rem;
   margin-bottom: 0.6rem;
 }
 
-.ping-bar-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.5s ease;
+/* ===== 柱状热点图 ===== */
+.heatmap {
+  overflow: hidden;
 }
 
-.ping-bar-fill.good { background: #4caf50; }
-.ping-bar-fill.medium { background: #ff9800; }
-.ping-bar-fill.bad { background: #f44336; }
-.ping-bar-fill.lost { background: #9e9e9e; }
-
-.ping-stats {
+.heatmap-bars {
   display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
+  align-items: flex-end;
+  gap: 2px;
+  height: 48px;
+  margin-bottom: 0.5rem;
+}
+
+.heatmap-bar-wrap {
+  flex: 1;
+  min-width: 2px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.heatmap-bar {
+  width: 100%;
+  border-radius: 1px 1px 0 0;
+  min-height: 2px;
+  transition: transform 0.15s ease;
+}
+
+.heatmap-bar:hover {
+  transform: scaleY(1.3);
+  transform-origin: bottom;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  padding-top: 0.3rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
 }
 
 @media (max-width: 700px) {
