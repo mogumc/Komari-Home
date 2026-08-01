@@ -66,10 +66,12 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { rpcCall } from '@/utils/rpc'
+import { useThemeSettings } from '@/composables/useThemeSettings'
 
 const route = useRoute()
+const { settings } = useThemeSettings()
 const navHidden = ref(false)
-const siteName = ref('Komari Home')
+const siteName = computed(() => settings.value.sitename || 'Komari Home')
 const loggedIn = ref(false)
 const showLogin = ref(false)
 const username = ref('')
@@ -78,9 +80,9 @@ const loginError = ref('')
 const loginLoading = ref(false)
 const require2FA = ref(false)
 const twoFac = ref('')
-const disablePasswordLogin = ref(false)
-const oauthEnable = ref(false)
-const oauthProvider = ref('')
+const disablePasswordLogin = computed(() => !!settings.value.disable_password_login)
+const oauthEnable = computed(() => !!settings.value.oauth_enable)
+const oauthProvider = computed(() => settings.value.oauth_provider || '')
 let lastScrollY = 0
 
 const navItems = [
@@ -151,15 +153,6 @@ function doLogin() {
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
-
-  rpcCall('public:getPublicSettings')
-    .then(d => {
-      if (d.sitename) siteName.value = d.sitename
-      disablePasswordLogin.value = !!d.disable_password_login
-      oauthEnable.value = !!d.oauth_enable
-      oauthProvider.value = d.oauth_provider || ''
-    })
-    .catch(() => {})
 
   rpcCall('public:getMe')
     .then(data => {
