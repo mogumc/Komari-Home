@@ -8,17 +8,17 @@
 
     <!-- 硬件信息 -->
     <div class="hardware-grid" v-if="nodeInfo.cpu_name">
-      <div class="glass-card hw-card">
+      <div class="glass-card">
         <h4><i class="bi bi-cpu"></i> 处理器</h4>
         <div class="hw-val">{{ nodeInfo.cpu_name || '-' }}</div>
         <div class="sub-info">{{ nodeInfo.cpu_cores || 0 }} 逻辑核心{{ nodeInfo.cpu_physical_cores ? ' / ' + nodeInfo.cpu_physical_cores + ' 物理核心' : '' }}</div>
       </div>
-      <div class="glass-card hw-card">
+      <div class="glass-card">
         <h4><i class="bi bi-motherboard"></i> 系统</h4>
         <div class="hw-val">{{ nodeInfo.os || '-' }}</div>
         <div class="sub-info">{{ nodeInfo.arch || '-' }}{{ nodeInfo.virtualization ? ' · ' + nodeInfo.virtualization : '' }}</div>
       </div>
-      <div class="glass-card hw-card" v-if="nodeInfo.gpu_name">
+      <div class="glass-card" v-if="nodeInfo.gpu_name">
         <h4><i class="bi bi-gpu-card"></i> GPU</h4>
         <div class="hw-val">{{ nodeInfo.gpu_name }}</div>
       </div>
@@ -602,9 +602,6 @@ function hasData(key) {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
   width: 100%;
-}
-
-.hw-card {
 }
 
 .hw-val {
