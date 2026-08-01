@@ -1,20 +1,37 @@
 <template>
   <div class="komari-page">
     <div class="page-header">
-      <div class="header-left">
-        <i class="bi bi-cpu-fill"></i> 服务器监控
-        <span class="status-dot" :class="wsConnected ? 'online' : 'offline'"></span>
+      <div class="header-row">
+        <div class="header-left">
+          <i class="bi bi-cpu-fill"></i> 服务器监控
+          <span class="status-dot" :class="wsConnected ? 'online' : 'offline'"></span>
+        </div>
+        <div class="group-filter" v-if="groupList.length > 1">
+          <button class="group-scroll" v-if="groupScroll > 0" @click="groupScroll--">&lt;</button>
+          <button
+            v-for="g in visibleGroups"
+            :key="g"
+            class="group-btn"
+            :class="{ active: activeGroup === g }"
+            @click="activeGroup = g"
+          >{{ g === '__all__' ? '全部' : g || '未分组' }}</button>
+          <button class="group-scroll" v-if="groupScroll + 3 < groupList.length" @click="groupScroll++">&gt;</button>
+        </div>
       </div>
-      <div class="group-filter" v-if="groupList.length > 1">
-        <button class="group-scroll" v-if="groupScroll > 0" @click="groupScroll--">&lt;</button>
-        <button
-          v-for="g in visibleGroups"
-          :key="g"
-          class="group-btn"
-          :class="{ active: activeGroup === g }"
-          @click="activeGroup = g"
-        >{{ g === '__all__' ? '全部' : g || '未分组' }}</button>
-        <button class="group-scroll" v-if="groupScroll + 3 < groupList.length" @click="groupScroll++">&gt;</button>
+      <div class="billing-row" v-if="billingEnabled">
+        <span class="billing-label" v-if="costText">{{ costText }}</span>
+        <span class="billing-sep" v-if="costText && expiringNodes.length > 0">|</span>
+        <span class="billing-expire" v-if="expiringNodes.length === 0">没有服务器即将到期</span>
+        <span class="billing-expire" v-else-if="expiringNodes.length === 1">
+          {{ expireText(expiringNodes[0]) }}
+        </span>
+      <span class="billing-expire-wrap" v-else>
+        <transition name="expire-slide" mode="out-in">
+          <span class="billing-expire" :key="expireIndex">
+            {{ expireText(expiringNodes[expireIndex]) }}
+          </span>
+        </transition>
+      </span>
       </div>
     </div>
 
@@ -30,13 +47,18 @@
           <span class="server-status" :class="isOnline(node.uuid) ? 'on' : 'off'">
             {{ isOnline(node.uuid) ? '在线' : '离线' }}
           </span>
+          <span v-if="parseExpire(node) && remainingDays(parseExpire(node)) !== -1" class="expire-days" :class="{ urgent: remainingDays(parseExpire(node)) <= 7 && remainingDays(parseExpire(node)) > 0, expired: remainingDays(parseExpire(node)) <= 0 }">
+            <template v-if="remainingDays(parseExpire(node)) > 36500">长期有效</template>
+            <template v-else>{{ remainingDays(parseExpire(node)) > 0 ? remainingDays(parseExpire(node)) + ' 天' : '已过期 ' + Math.abs(remainingDays(parseExpire(node))) + ' 天' }}</template>
+          </span>
         </div>
 
         <div class="card-meta">
           <span><i class="bi bi-hdd"></i> {{ node.os || '未知' }}</span>
           <span><i class="bi bi-geo-alt"></i> {{ node.region || '未知' }}</span>
         </div>
-        <div class="card-tags" v-if="getTags(node).length">
+        <div class="card-tags" v-if="getPriceLabel(node) || getTags(node).length">
+          <span v-if="getPriceLabel(node)" class="price-label" :class="{ free: (node.price ?? 0) <= 0 }">{{ getPriceLabel(node) }}</span>
           <span class="tag-label" v-for="t in getTags(node)" :key="t">{{ t }}</span>
         </div>
 
@@ -126,6 +148,122 @@ const visibleGroups = computed(() => {
 function getTags(node) {
   return (node.tags || '').split(';').map(t => t.trim()).filter(Boolean)
 }
+
+// ========== Billing 解析（基于节点字段） ==========
+// 计费周期简化为人类可读格式，-1 或 0 不显示周期
+function formatCycle(days) {
+  if (days <= 0) return ''
+  const checks = [
+    [365, '年'],
+    [92, '季'],
+    [30, '月'],
+  ]
+  for (const [base, label] of checks) {
+    if (days % base === 0) {
+      const n = days / base
+      return n === 1 ? `/${label}` : `/${n}${label}`
+    }
+  }
+  return `/${days}天`
+}
+
+// price: -1/0 免费，>0 显示 "￥33/月"
+function formatPrice(node) {
+  const p = node.price
+  if (p === undefined || p === null) return null
+  const cur = node.currency || '￥'
+  if (p <= 0) return { label: '免费', monthly: 0, currency: cur }
+  const cycle = formatCycle(node.billing_cycle || 30)
+  return { label: `${cur}${p}${cycle}`, monthly: monthlyFrom(node), currency: cur }
+}
+
+// 月均成本：按 billing_cycle 折算
+function monthlyFrom(node) {
+  const p = node.price
+  const days = node.billing_cycle || 30
+  if (!p || p <= 0 || days <= 0) return 0
+  return +(p / days * 30).toFixed(2)
+}
+
+function getPriceLabel(node) {
+  const r = formatPrice(node)
+  return r ? r.label : null
+}
+
+// 到期时间
+function parseExpire(node) {
+  return node.expired_at || null
+}
+
+function remainingDays(expireStr) {
+  const d = new Date(expireStr)
+  return Math.ceil((d - Date.now()) / 86400000)
+}
+
+// 到期文案
+function expireText(ex) {
+  if (ex.days > 0) return `服务器 ${ex.name} 还有 ${ex.days} 天到期`
+  return `服务器 ${ex.name} 已经过期 ${Math.abs(ex.days)} 天`
+}
+const billingEnabled = computed(() => settings.value.komariBillingEnabled === true)
+
+// 按币种分组的月成本（排除一次性付款 -1 天）
+const monthlyCost = computed(() => {
+  const map = {}
+  for (const n of nodes.value) {
+    const expire = parseExpire(n)
+    if (expire && remainingDays(expire) === -1) continue
+    const r = formatPrice(n)
+    if (!r || r.monthly <= 0) continue
+    map[r.currency] = (map[r.currency] || 0) + r.monthly
+  }
+  return Object.entries(map)
+    .sort((a, b) => b[1] - a[1])
+    .map(([cur, amt]) => `${amt.toFixed(2)}${cur}`)
+    .join(' ')
+})
+
+const costText = computed(() => {
+  const parts = monthlyCost.value
+  return parts ? `成本 ${parts} /月` : null
+})
+
+// 到期/过期列表：已过期不限时长，即将到期仅7天内，排除一次性(-1)和长期有效(>100年)
+const expiringNodes = computed(() => {
+  const result = []
+  for (const n of nodes.value) {
+    const expire = parseExpire(n)
+    if (!expire) continue
+    const days = remainingDays(expire)
+    if (days === -1 || days > 36500) continue  // 一次性 / 长期有效
+    if (days > 7) continue                       // 即将到期仅7天内
+    result.push({ name: n.name, days })
+  }
+  result.sort((a, b) => a.days - b.days)
+  return result
+})
+
+// 到期滚动索引
+const expireIndex = ref(0)
+let expireTimer = null
+
+function startExpireCycle() {
+  if (expireTimer) clearInterval(expireTimer)
+  expireIndex.value = 0
+  if (expiringNodes.value.length > 1) {
+    expireTimer = setInterval(() => {
+      expireIndex.value = (expireIndex.value + 1) % expiringNodes.value.length
+    }, 6000)
+  }
+}
+
+watch(expiringNodes, () => {
+  startExpireCycle()
+}, { immediate: true })
+
+onUnmounted(() => {
+  if (expireTimer) clearInterval(expireTimer)
+})
 
 // 排序配置
 const sortBy = computed(() => settings.value.komariSortBy || '原顺序')
@@ -310,15 +448,21 @@ function goInstance(uuid) {
 .page-header {
   width: 100%;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 1.8rem;
+  flex-direction: column;
   font-weight: bold;
   color: #fff;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   padding: 0.6rem 1.5rem;
   border-radius: 12px;
+  gap: 0.4rem;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.8rem;
 }
 
 .header-left {
@@ -389,6 +533,95 @@ function goInstance(uuid) {
   color: #fff;
 }
 
+/* ========== Billing ========== */
+.billing-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: normal;
+  color: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+
+.billing-label {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.billing-sep {
+  color: rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.billing-expire {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.billing-expire-wrap {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  min-height: 1.3em;
+  padding: 2px 0;
+}
+
+/* 上下滚动切换 */
+.expire-slide-enter-active,
+.expire-slide-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.expire-slide-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.expire-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 价格标签（融入 tags 区域） */
+.price-label {
+  font-size: 0.7rem;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(255, 183, 77, 0.12);
+  color: #ffb74d;
+  border: 1px solid rgba(255, 183, 77, 0.2);
+  white-space: nowrap;
+}
+
+.price-label.free {
+  background: rgba(76, 175, 80, 0.15);
+  color: #81c784;
+  border-color: rgba(76, 175, 80, 0.25);
+}
+
+/* 到期天数（卡片右上角 pill） */
+.expire-days {
+  font-size: 0.8rem;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.expire-days.urgent {
+  background: rgba(255, 152, 0, 0.15);
+  color: #ffb74d;
+}
+
+.expire-days.expired {
+  background: rgba(244, 67, 54, 0.15);
+  color: #e57373;
+}
+
 .card-tags {
   display: flex;
   flex-wrap: wrap;
@@ -430,8 +663,8 @@ function goInstance(uuid) {
 
 .card-top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-bottom: 0.8rem;
 }
 
@@ -439,6 +672,11 @@ function goInstance(uuid) {
   font-size: 1.1rem;
   font-weight: bold;
   color: #fff;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .server-status {
@@ -586,6 +824,10 @@ function goInstance(uuid) {
   }
 
   .page-header {
+    gap: 0.5rem;
+  }
+
+  .header-row {
     flex-direction: column;
     gap: 0.5rem;
     font-size: 1.3rem;
