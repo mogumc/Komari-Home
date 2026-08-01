@@ -145,6 +145,9 @@ const displayNodes = computed(() => {
     list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
   } else if (sortBy.value === '分类') {
     list.sort((a, b) => (a.group || '').localeCompare(b.group || '') || (a.name || '').localeCompare(b.name || ''))
+  } else {
+    // 原顺序：按 weight 升序
+    list.sort((a, b) => (a.weight ?? 0) - (b.weight ?? 0))
   }
 
   // 在线靠前
