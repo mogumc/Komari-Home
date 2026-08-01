@@ -26,6 +26,8 @@ const props = defineProps({
   url: { type: String, default: '' }
 })
 
+const RSS_CACHE_KEY = 'komari_rss_cache'
+
 const items = ref([])
 const feedTitle = ref('')
 const loading = ref(true)
@@ -41,18 +43,47 @@ function formatTime(dateStr) {
   }
 }
 
+function loadFromCache(url) {
+  try {
+    const raw = localStorage.getItem(RSS_CACHE_KEY)
+    if (!raw) return false
+    const cache = JSON.parse(raw)
+    const entry = cache[url]
+    if (entry && Array.isArray(entry.items) && entry.items.length) {
+      feedTitle.value = entry.feedTitle || ''
+      items.value = entry.items
+      return true
+    }
+  } catch { /* ignore */ }
+  return false
+}
+
+function saveToCache(url, title, items) {
+  try {
+    const raw = localStorage.getItem(RSS_CACHE_KEY)
+    const cache = raw ? JSON.parse(raw) : {}
+    cache[url] = { feedTitle: title, items, ts: Date.now() }
+    localStorage.setItem(RSS_CACHE_KEY, JSON.stringify(cache))
+  } catch { /* ignore */ }
+}
+
 async function fetchRss(url) {
   if (!url) return
-  loading.value = true
   error.value = ''
+  if (!loadFromCache(url)) {
+    loading.value = true
+  }
 
   try {
     // 优先通过 rss2json 代理（解决跨域）
     const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`)
     const data = await res.json()
     if (data.status === 'ok') {
-      feedTitle.value = data.feed?.title || ''
-      items.value = (data.items || []).slice(0, 4)
+      const title = data.feed?.title || ''
+      const list = (data.items || []).slice(0, 4)
+      feedTitle.value = title
+      items.value = list
+      saveToCache(url, title, list)
       return
     }
     throw new Error(data.message || 'parse error')
@@ -69,11 +100,13 @@ async function fetchRss(url) {
       if (channel) {
         feedTitle.value = channel.querySelector('title')?.textContent || ''
         const entries = channel.querySelectorAll('item')
-        items.value = Array.from(entries).slice(0, 4).map(el => ({
+        const list = Array.from(entries).slice(0, 4).map(el => ({
           title: el.querySelector('title')?.textContent || '',
           link: el.querySelector('link')?.textContent || '',
           pubDate: el.querySelector('pubDate')?.textContent || ''
         }))
+        items.value = list
+        saveToCache(url, feedTitle.value, list)
         return
       }
 
@@ -82,11 +115,13 @@ async function fetchRss(url) {
       if (feed) {
         feedTitle.value = feed.querySelector('title')?.textContent || ''
         const entries = feed.querySelectorAll('entry')
-        items.value = Array.from(entries).slice(0, 4).map(el => ({
+        const list = Array.from(entries).slice(0, 4).map(el => ({
           title: el.querySelector('title')?.textContent || '',
           link: el.querySelector('link')?.getAttribute('href') || '',
           pubDate: el.querySelector('updated')?.textContent || el.querySelector('published')?.textContent || ''
         }))
+        items.value = list
+        saveToCache(url, feedTitle.value, list)
         return
       }
 
@@ -98,10 +133,6 @@ async function fetchRss(url) {
     loading.value = false
   }
 }
-
-onMounted(() => {
-  if (props.url) fetchRss(props.url)
-})
 
 onMounted(() => {
   if (props.url) fetchRss(props.url)
