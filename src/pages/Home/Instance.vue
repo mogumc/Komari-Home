@@ -37,7 +37,7 @@
               </linearGradient>
             </defs>
             <path :d="chartArea(history.cpu, 100, 200, 60)" fill="url(#cpuG)"/>
-            <path :d="chartLine(history.cpu, 100, 200, 60)" fill="none" stroke="#66ccff" stroke-width="1.5"/>
+            <path :d="chartLine(history.cpu, 100, 200, 60)" fill="none" stroke="#66ccff" stroke-width="1.5" :stroke-dasharray="hasData('cpu') ? 'none' : '3,3'"/>
           </svg>
         </div>
         <div class="sub-info">{{ nodeInfo.cpu_name || '-' }} 核心</div>
@@ -55,7 +55,7 @@
               </linearGradient>
             </defs>
             <path :d="chartArea(history.mem, 100, 200, 60)" fill="url(#memG)"/>
-            <path :d="chartLine(history.mem, 100, 200, 60)" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+            <path :d="chartLine(history.mem, 100, 200, 60)" fill="none" stroke="#a78bfa" stroke-width="1.5" :stroke-dasharray="hasData('mem') ? 'none' : '3,3'"/>
           </svg>
         </div>
         <div class="sub-info">{{ formatBytes(memUsed) }} / {{ formatBytes(memTotal) }}</div>
@@ -73,7 +73,7 @@
               </linearGradient>
             </defs>
             <path :d="chartArea(history.disk, 100, 200, 60)" fill="url(#diskG)"/>
-            <path :d="chartLine(history.disk, 100, 200, 60)" fill="none" stroke="#4fc3f7" stroke-width="1.5"/>
+            <path :d="chartLine(history.disk, 100, 200, 60)" fill="none" stroke="#4fc3f7" stroke-width="1.5" :stroke-dasharray="hasData('disk') ? 'none' : '3,3'"/>
           </svg>
         </div>
         <div class="sub-info">{{ formatBytes(diskUsed) }} / {{ formatBytes(diskTotal) }}</div>
@@ -86,8 +86,8 @@
           <svg viewBox="0 0 200 60" preserveAspectRatio="none">
             <defs>
               <linearGradient id="netTxG" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#66ccff" stop-opacity="0.2"/>
-                <stop offset="100%" stop-color="#66ccff" stop-opacity="0.02"/>
+                <stop offset="0%" stop-color="#66ccff" stop-opacity="0.1"/>
+                <stop offset="100%" stop-color="#66ccff" stop-opacity="0.01"/>
               </linearGradient>
               <linearGradient id="netRxG" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.2"/>
@@ -95,9 +95,9 @@
               </linearGradient>
             </defs>
             <path :d="chartArea(history.netTx, netMax, 200, 60)" fill="url(#netTxG)"/>
-            <path :d="chartLine(history.netTx, netMax, 200, 60)" fill="none" stroke="#66ccff" stroke-width="1.5"/>
+            <path :d="chartLine(history.netTx, netMax, 200, 60)" fill="none" stroke="#66ccff" stroke-width="1.5" :stroke-dasharray="hasData('netTx') ? 'none' : '3,3'"/>
             <path :d="chartArea(history.netRx, netMax, 200, 60)" fill="url(#netRxG)"/>
-            <path :d="chartLine(history.netRx, netMax, 200, 60)" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+            <path :d="chartLine(history.netRx, netMax, 200, 60)" fill="none" stroke="#a78bfa" stroke-width="1.5" :stroke-dasharray="hasData('netRx') ? 'none' : '3,3'"/>
           </svg>
         </div>
         <div class="sub-info">
@@ -119,7 +119,7 @@
               </linearGradient>
             </defs>
             <path :d="chartArea(history.proc, procMax, 200, 60)" fill="url(#procG)"/>
-            <path :d="chartLine(history.proc, procMax, 200, 60)" fill="none" stroke="#ff8a65" stroke-width="1.5"/>
+            <path :d="chartLine(history.proc, procMax, 200, 60)" fill="none" stroke="#ff8a65" stroke-width="1.5" :stroke-dasharray="hasData('proc') ? 'none' : '3,3'"/>
           </svg>
         </div>
         <div class="sub-info load-row">
@@ -128,12 +128,12 @@
       </div>
 
       <!-- 运行时间 -->
-      <div class="glass-card chart-card uptime-card">
+      <div class="glass-card chart-card">
         <h4><i class="bi bi-clock-history"></i> 运行时间</h4>
-        <div class="uptime-body">
+        <div style="flex:1">
           <div class="big-num small">{{ uptimeStr }}</div>
-          <div class="sub-info" v-if="remainDays">剩余 {{ remainDays }}</div>
         </div>
+        <div class="sub-info" v-if="remainDays">剩余 {{ remainDays }}</div>
       </div>
     </div>
 
@@ -172,13 +172,10 @@
                 <div class="heatmap-bar" :style="{ height: cell.height + '%', background: cell.color }"></div>
               </div>
             </div>
-            <div class="heatmap-legend">
-              <span>丢包</span><span class="legend-swatch" style="background:rgba(158,158,158,0.5)"></span>
-              <span>&lt;30</span><span class="legend-swatch" style="background:rgba(76,175,80,0.8)"></span>
-              <span>30-80</span><span class="legend-swatch" style="background:rgba(139,195,74,0.7)"></span>
-              <span>80-150</span><span class="legend-swatch" style="background:rgba(255,235,59,0.7)"></span>
-              <span>150-300</span><span class="legend-swatch" style="background:rgba(255,152,0,0.7)"></span>
-              <span>&gt;300</span><span class="legend-swatch" style="background:rgba(244,67,54,0.8)"></span>
+            <div class="heatmap-stats">
+              <span>最高 {{ row.stats.max }}ms</span>
+              <span>最低 {{ row.stats.min }}ms</span>
+              <span>平均 {{ row.stats.avg }}ms</span>
             </div>
           </div>
         </div>
@@ -343,6 +340,16 @@ function heatCellColor(val) {
   return 'rgba(244,67,54,0.8)'
 }
 
+function pingStats(cells) {
+  const vals = cells.map(c => c.value).filter(v => v !== null)
+  if (!vals.length) return { avg: '-', min: '-', max: '-' }
+  return {
+    avg: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length),
+    min: Math.min(...vals),
+    max: Math.max(...vals)
+  }
+}
+
 const heatmapData = computed(() => {
   if (!pingTasks.value.length) return { rows: [] }
 
@@ -372,7 +379,7 @@ const heatmapData = computed(() => {
       return { value: avg, height: h, color: heatCellColor(avg) }
     })
 
-    return { name: task.name, cells }
+    return { name: task.name, cells, stats: pingStats(cells) }
   })
 
   return { rows }
@@ -431,8 +438,8 @@ function onChartHover(e, key) {
   const idx = Math.min(arr.length - 1, Math.max(0, Math.round(ratio * (arr.length - 1))))
   const val = arr[idx]
   tooltip.show = true
-  tooltip.x = e.clientX - 20
-  tooltip.y = e.clientY - 40
+  tooltip.x = Math.min(e.clientX - 20, window.innerWidth - 130)
+  tooltip.y = Math.max(10, e.clientY - 40)
   if (key === 'cpu' || key === 'mem' || key === 'disk') {
     tooltip.text = val.toFixed(1) + '%'
   } else if (key === 'proc') {
@@ -508,7 +515,8 @@ function pushHistory() {
 // 在 connectAndPoll 的 poll 回调中调用 pushHistory()
 // SVG 路径生成
 function chartLine(arr, maxVal, w, h) {
-  if (arr.length < 2) return ''
+  if (!arr.length) return ''
+  if (arr.length < 2) return `M0 ${h.toFixed(1)} L${w.toFixed(1)} ${h.toFixed(1)}`
   const step = w / (arr.length - 1)
   return arr.map((v, i) => {
     const x = (i * step).toFixed(1)
@@ -518,7 +526,8 @@ function chartLine(arr, maxVal, w, h) {
 }
 
 function chartArea(arr, maxVal, w, h) {
-  if (arr.length < 2) return ''
+  if (!arr.length) return ''
+  if (arr.length < 2) return `M0 ${h} L${w} ${h} L${w} ${h} L0 ${h} Z`
   const step = w / (arr.length - 1)
   const pts = arr.map((v, i) => {
     const x = (i * step).toFixed(1)
@@ -526,6 +535,11 @@ function chartArea(arr, maxVal, w, h) {
     return `L${x} ${y}`
   }).join(' ').replace(/^L/, 'M')
   return `${pts} L${w.toFixed(1)},${h.toFixed(1)} L0,${h.toFixed(1)} Z`
+}
+
+// 数据是否足够（>=2 点）
+function hasData(key) {
+  return history[key] && history[key].length >= 2
 }
 </script>
 
@@ -629,8 +643,16 @@ function chartArea(arr, maxVal, w, h) {
   margin-right: 6px;
 }
 
-/* 曲线图卡片 */
-.chart-val {
+.chart-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-svg {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  margin: 0.5rem 0;
   font-size: 1.1rem;
   font-weight: bold;
   color: #fff;
@@ -670,21 +692,6 @@ function chartArea(arr, maxVal, w, h) {
 }
 .sub-info.load-row span { color: rgba(255,255,255,0.6); }
 
-.uptime-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.uptime-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.uptime-body .sub-info {
-  margin-top: auto;
-}
 
 .big-num {
   font-size: 2rem;
@@ -813,6 +820,15 @@ function chartArea(arr, maxVal, w, h) {
 .heatmap-bar:hover {
   transform: scaleY(1.3);
   transform-origin: bottom;
+}
+
+.heatmap-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  padding-top: 0.3rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .heatmap-legend {
