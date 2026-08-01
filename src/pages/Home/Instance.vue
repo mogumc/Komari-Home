@@ -26,50 +26,114 @@
 
     <div class="detail-grid" v-if="metrics">
       <!-- CPU -->
-      <div class="glass-card">
-        <h4><i class="bi bi-cpu"></i> CPU</h4>
-        <div class="big-num">{{ cpuPercent }}%</div>
+      <div class="glass-card chart-card">
+        <h4><i class="bi bi-cpu"></i> CPU <span class="chart-val">{{ cpuPercent }}%</span></h4>
+        <div class="chart-svg" @mousemove="e => onChartHover(e, 'cpu')" @mouseleave="onChartLeave">
+          <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="cpuG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#66ccff" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#66ccff" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <path :d="chartArea(history.cpu, 100, 200, 60)" fill="url(#cpuG)"/>
+            <path :d="chartLine(history.cpu, 100, 200, 60)" fill="none" stroke="#66ccff" stroke-width="1.5"/>
+          </svg>
+        </div>
         <div class="sub-info">{{ nodeInfo.cpu_name || '-' }} 核心</div>
       </div>
 
       <!-- 内存 -->
-      <div class="glass-card">
-        <h4><i class="bi bi-memory"></i> 内存</h4>
-        <div class="big-num">{{ memPercent }}%</div>
+      <div class="glass-card chart-card">
+        <h4><i class="bi bi-memory"></i> 内存 <span class="chart-val">{{ memPercent }}%</span></h4>
+        <div class="chart-svg" @mousemove="e => onChartHover(e, 'mem')" @mouseleave="onChartLeave">
+          <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="memG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <path :d="chartArea(history.mem, 100, 200, 60)" fill="url(#memG)"/>
+            <path :d="chartLine(history.mem, 100, 200, 60)" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+          </svg>
+        </div>
         <div class="sub-info">{{ formatBytes(memUsed) }} / {{ formatBytes(memTotal) }}</div>
       </div>
 
       <!-- 磁盘 -->
-      <div class="glass-card">
-        <h4><i class="bi bi-hdd-stack"></i> 磁盘</h4>
-        <div class="big-num">{{ diskPercent }}%</div>
+      <div class="glass-card chart-card">
+        <h4><i class="bi bi-hdd-stack"></i> 磁盘 <span class="chart-val">{{ diskPercent }}%</span></h4>
+        <div class="chart-svg" @mousemove="e => onChartHover(e, 'disk')" @mouseleave="onChartLeave">
+          <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="diskG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#4fc3f7" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#4fc3f7" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <path :d="chartArea(history.disk, 100, 200, 60)" fill="url(#diskG)"/>
+            <path :d="chartLine(history.disk, 100, 200, 60)" fill="none" stroke="#4fc3f7" stroke-width="1.5"/>
+          </svg>
+        </div>
         <div class="sub-info">{{ formatBytes(diskUsed) }} / {{ formatBytes(diskTotal) }}</div>
       </div>
 
       <!-- 网络 -->
-      <div class="glass-card">
+      <div class="glass-card chart-card">
         <h4><i class="bi bi-arrow-down-up"></i> 网络</h4>
-        <div class="net-row">
-          <span><i class="bi bi-arrow-up"></i> {{ formatBytes(netTx) }}/s</span>
-          <span><i class="bi bi-arrow-down"></i> {{ formatBytes(netRx) }}/s</span>
+        <div class="chart-svg" @mousemove="e => onChartHover(e, 'netTx')" @mouseleave="onChartLeave">
+          <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="netTxG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#66ccff" stop-opacity="0.2"/>
+                <stop offset="100%" stop-color="#66ccff" stop-opacity="0.02"/>
+              </linearGradient>
+              <linearGradient id="netRxG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.2"/>
+                <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <path :d="chartArea(history.netTx, netMax, 200, 60)" fill="url(#netTxG)"/>
+            <path :d="chartLine(history.netTx, netMax, 200, 60)" fill="none" stroke="#66ccff" stroke-width="1.5"/>
+            <path :d="chartArea(history.netRx, netMax, 200, 60)" fill="url(#netRxG)"/>
+            <path :d="chartLine(history.netRx, netMax, 200, 60)" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+          </svg>
         </div>
-        <div class="sub-info">连接数: {{ connections }}</div>
+        <div class="sub-info">
+          <span class="net-up">↑: {{ formatBytes(netTx) }}/s&nbsp;</span>
+          <span class="net-down">↓: {{ formatBytes(netRx) }}/s</span>
+          &nbsp;| TCP: {{ connections.tcp }} UDP: {{ connections.udp }}
+        </div>
       </div>
 
-      <!-- 负载 -->
-      <div class="glass-card">
-        <h4><i class="bi bi-speedometer2"></i> 系统负载</h4>
-        <div class="load-row">
+      <!-- 进程数 -->
+      <div class="glass-card chart-card">
+        <h4><i class="bi bi-diagram-3"></i> 进程 <span class="chart-val">{{ processes }}</span></h4>
+        <div class="chart-svg" @mousemove="e => onChartHover(e, 'proc')" @mouseleave="onChartLeave">
+          <svg viewBox="0 0 200 60" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="procG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ff8a65" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#ff8a65" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <path :d="chartArea(history.proc, procMax, 200, 60)" fill="url(#procG)"/>
+            <path :d="chartLine(history.proc, procMax, 200, 60)" fill="none" stroke="#ff8a65" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="sub-info load-row">
           <span v-for="(l, i) in loadAvg" :key="i">{{ l }}</span>
         </div>
-        <div class="sub-info">进程: {{ processes }}</div>
       </div>
 
       <!-- 运行时间 -->
-      <div class="glass-card">
+      <div class="glass-card chart-card uptime-card">
         <h4><i class="bi bi-clock-history"></i> 运行时间</h4>
-        <div class="big-num small">{{ uptimeStr }}</div>
-        <div class="sub-info">{{ nodeInfo.os || '未知系统' }}</div>
+        <div class="uptime-body">
+          <div class="big-num small">{{ uptimeStr }}</div>
+          <div class="sub-info" v-if="remainDays">剩余 {{ remainDays }}</div>
+        </div>
       </div>
     </div>
 
@@ -77,6 +141,12 @@
       <i class="bi bi-hourglass-split"></i>
       <p>正在获取数据...</p>
     </div>
+
+    <Teleport to="body">
+      <div class="chart-tooltip" v-show="tooltip.show" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
+        {{ tooltip.text }}
+      </div>
+    </Teleport>
 
     <!-- 延迟柱状热点图 -->
     <div class="ping-section" v-if="heatmapData.rows.length">
@@ -120,7 +190,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { rpcCall, createRpcSocket } from '@/utils/rpc'
 
@@ -170,6 +240,7 @@ async function fetchRecent() {
       const latest = data.records[data.records.length - 1]
       metrics.value = latest
       online.value = true
+      pushHistory()
     }
   } catch {}
 }
@@ -189,6 +260,7 @@ function connectAndPoll() {
         if (status) {
           metrics.value = status
           online.value = status.online === true
+          pushHistory()
         }
       })
       .catch(() => {})
@@ -330,9 +402,62 @@ const netTx = computed(() => metrics.value?.net_out ?? 0)
 const connections = computed(() => {
   const tcp = metrics.value?.connections ?? 0
   const udp = metrics.value?.connections_udp ?? 0
-  return tcp + udp
+  return { tcp, udp, total: tcp + udp }
 })
 const processes = computed(() => metrics.value?.process ?? 0)
+
+const netMax = computed(() => {
+  const vals = [...history.netRx, ...history.netTx]
+  if (!vals.length) return 1000
+  const raw = Math.max(...vals)
+  return raw > 0 ? raw * 1.3 : 1000
+})
+
+const procMax = computed(() => {
+  if (!history.proc.length) return 120
+  const max = Math.max(...history.proc, 1)
+  return Math.max(120, max * 1.3)
+})
+
+// hover 提示
+const tooltip = reactive({ show: false, x: 0, y: 0, text: '' })
+let tooltipTimer = null
+
+function onChartHover(e, key) {
+  const arr = history[key]
+  if (!arr || arr.length < 2) { tooltip.show = false; return }
+  const rect = e.currentTarget.getBoundingClientRect()
+  const ratio = (e.clientX - rect.left) / rect.width
+  const idx = Math.min(arr.length - 1, Math.max(0, Math.round(ratio * (arr.length - 1))))
+  const val = arr[idx]
+  tooltip.show = true
+  tooltip.x = e.clientX - 20
+  tooltip.y = e.clientY - 40
+  if (key === 'cpu' || key === 'mem' || key === 'disk') {
+    tooltip.text = val.toFixed(1) + '%'
+  } else if (key === 'proc') {
+    tooltip.text = Math.round(val) + ' 进程'
+  } else if (key === 'netTx') {
+    const txVal = history.netTx[idx]
+    const rxVal = history.netRx[idx]
+    tooltip.text = `↑ ${formatBytes(txVal)}/s  ↓ ${formatBytes(rxVal)}/s`
+  }
+  if (tooltipTimer) clearTimeout(tooltipTimer)
+}
+
+function onChartLeave() {
+  tooltipTimer = setTimeout(() => { tooltip.show = false }, 100)
+}
+
+// 运行时间剩余天数
+const remainDays = computed(() => {
+  if (!nodeInfo.value?.expired_at) return null
+  const d = new Date(nodeInfo.value.expired_at)
+  const days = Math.ceil((d - Date.now()) / 86400000)
+  if (days === -1 || days > 36500) return null
+  if (days <= 0) return `已过期 ${Math.abs(days)} 天`
+  return `${days} 天到期`
+})
 
 const loadAvg = computed(() => {
   if (!metrics.value) return ['-', '-', '-']
@@ -359,6 +484,48 @@ function formatBytes(bytes) {
   if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB'
   if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB'
   return (bytes / 1073741824).toFixed(2) + ' GB'
+}
+
+// ===== 曲线图 history =====
+const MAX_POINTS = 60
+const history = reactive({
+  cpu: [], mem: [], disk: [],
+  netRx: [], netTx: [], proc: []
+})
+
+function pushHistory() {
+  if (!metrics.value) return
+  const m = metrics.value
+  const push = (arr, v, max) => { arr.push(v); if (arr.length > max) arr.shift() }
+  push(history.cpu, Math.min(100, m.cpu ?? 0), MAX_POINTS)
+  push(history.mem, memPercent.value, MAX_POINTS)
+  push(history.disk, diskPercent.value, MAX_POINTS)
+  push(history.netRx, m.net_in ?? 0, MAX_POINTS)
+  push(history.netTx, m.net_out ?? 0, MAX_POINTS)
+  push(history.proc, m.process ?? 0, MAX_POINTS)
+}
+
+// 在 connectAndPoll 的 poll 回调中调用 pushHistory()
+// SVG 路径生成
+function chartLine(arr, maxVal, w, h) {
+  if (arr.length < 2) return ''
+  const step = w / (arr.length - 1)
+  return arr.map((v, i) => {
+    const x = (i * step).toFixed(1)
+    const y = (h - Math.min(1, v / (maxVal || 1)) * h).toFixed(1)
+    return `${i === 0 ? 'M' : 'L'}${x} ${y}`
+  }).join(' ')
+}
+
+function chartArea(arr, maxVal, w, h) {
+  if (arr.length < 2) return ''
+  const step = w / (arr.length - 1)
+  const pts = arr.map((v, i) => {
+    const x = (i * step).toFixed(1)
+    const y = (h - Math.min(1, v / (maxVal || 1)) * h).toFixed(1)
+    return `L${x} ${y}`
+  }).join(' ').replace(/^L/, 'M')
+  return `${pts} L${w.toFixed(1)},${h.toFixed(1)} L0,${h.toFixed(1)} Z`
 }
 </script>
 
@@ -462,6 +629,63 @@ function formatBytes(bytes) {
   margin-right: 6px;
 }
 
+/* 曲线图卡片 */
+.chart-val {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.chart-svg {
+  position: relative;
+  width: 100%;
+  margin: 0.5rem 0;
+  min-height: 10px;
+}
+
+.chart-card svg {
+  width: 100%;
+  height: 60px;
+  display: block;
+}
+
+.chart-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.sub-info .net-up { color: #66ccff; }
+.sub-info .net-down { color: #a78bfa; }
+
+.sub-info.load-row {
+  display: flex;
+  gap: 1rem;
+}
+.sub-info.load-row span { color: rgba(255,255,255,0.6); }
+
+.uptime-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.uptime-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.uptime-body .sub-info {
+  margin-top: auto;
+}
+
 .big-num {
   font-size: 2rem;
   font-weight: bold;
@@ -476,26 +700,6 @@ function formatBytes(bytes) {
 .sub-info {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.5);
-}
-
-.net-row {
-  display: flex;
-  gap: 1.5rem;
-  font-size: 1.1rem;
-  color: #fff;
-  margin-bottom: 0.3rem;
-}
-
-.net-row i {
-  margin-right: 4px;
-}
-
-.load-row {
-  display: flex;
-  gap: 1.5rem;
-  font-size: 1.2rem;
-  color: #fff;
-  margin-bottom: 0.3rem;
 }
 
 .empty-state {
