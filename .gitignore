@@ -28,3 +28,15 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+# Agent
+.copilt/
+.trae/
+.claude/
+.codex/
+.codebuddy/
+.workbuddy/
+.trellis/
+
+# 构建产物
+*.zip
