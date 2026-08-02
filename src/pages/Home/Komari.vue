@@ -20,7 +20,7 @@
       </div>
       <div class="billing-row" v-if="billingEnabled">
         <span class="billing-label" v-if="costText">{{ costText }}</span>
-        <span class="billing-sep" v-if="costText && expiringNodes.length > 0">|</span>
+        <span class="billing-sep" v-if="costText">|</span>
         <span class="billing-expire" v-if="expiringNodes.length === 0">没有服务器即将到期</span>
         <span class="billing-expire" v-else-if="expiringNodes.length === 1">
           {{ expireText(expiringNodes[0]) }}
@@ -219,13 +219,13 @@ const monthlyCost = computed(() => {
   }
   return Object.entries(map)
     .sort((a, b) => b[1] - a[1])
-    .map(([cur, amt]) => `${amt.toFixed(2)}${cur}`)
+    .map(([cur, amt]) => `${cur}${amt.toFixed(2)}`)
     .join(' ')
 })
 
 const costText = computed(() => {
   const parts = monthlyCost.value
-  return parts ? `成本 ${parts} /月` : null
+  return parts ? `每月成本 ${parts}` : null
 })
 
 // 到期/过期列表：已过期不限时长，即将到期仅7天内，排除一次性(-1)和长期有效(>100年)
