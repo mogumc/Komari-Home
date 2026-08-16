@@ -15,7 +15,7 @@
           <i :class="['bi', 'bi-' + item.icon]"></i>
         </div>
         <div class="card-body">
-          <div class="card-name">{{ item.name }}</div>
+          <div class="card-name" v-fit-text="{ minScale: 0.6 }">{{ item.name }}</div>
           <div class="card-desc">{{ item.desc }}</div>
         </div>
       </div>
@@ -113,14 +113,19 @@ const goto = (url) => {
   font-weight: bold;
   color: #fff;
   margin-bottom: 4px;
+  min-width: 0;
+  /* 名称为单行，放不下时由 v-fit-text 缩小字号；此处兜底极端超长 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-desc {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.5);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.5;
+  /* bio 允许自然分行，长链接也能在任意字符处断行 */
+  overflow-wrap: anywhere;
 }
 
 .empty-hint {
