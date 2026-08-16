@@ -2,7 +2,7 @@
     "name": "Komari Home",
     "short": "komarihome",
     "description": "A Komari Web Theme with HomePage",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "author": "mogumc",
     "url": "https://github.com/mogumc/Komari-Home",
     "preview": "preview.png",
@@ -33,6 +33,7 @@
             { "key": "komariRowsPerPage", "name": { "zh-CN": "每页行数", "en": "Rows Per Page" }, "type": "number", "default": 3, "help": { "zh-CN": "服务器列表每页最多显示行数" } },
             { "key": "komariBillingEnabled", "name": { "zh-CN": "服务器月计费功能", "en": "Server Billing" }, "type": "switch", "default": false, "help": { "zh-CN": "开启后显示每月成本统计与服务器到期滚动提示" } },
             { "name": { "zh-CN": "外观设置", "en": "Appearance" }, "type": "title" },
+            { "key": "themeFaviconEnabled", "name": { "zh-CN": "启用主题 favicon", "en": "Theme Favicon" }, "type": "switch", "default": true, "help": { "zh-CN": "开启后页面使用主题自带 favicon，关闭则直接使用默认 favicon" } },
             { "key": "backgroundImageUrl", "name": { "zh-CN": "背景图片链接", "en": "Background Image URL" }, "type": "string", "default": "", "help": { "zh-CN": "全屏背景图片的完整 URL，留空则不显示背景图" } },
             { "key": "enableClock", "name": { "zh-CN": "启用时钟", "en": "Enable Clock" }, "type": "switch", "default": true },
             { "key": "enableHitokoto", "name": { "zh-CN": "启用一言", "en": "Enable Hitokoto" }, "type": "switch", "default": true }
