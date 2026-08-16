@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import Mask from '@/pages/Layout/Mask.vue'
 import NavBar from '@/pages/Layout/NavBar.vue'
 import Foot from '@/pages/Layout/Footer.vue'
@@ -39,6 +39,27 @@ const bgStyle = computed(() => {
   return url
     ? { backgroundImage: `url('${url}')` }
     : {}
+})
+
+// 主题 favicon：文件在主题专属路径 /komarihome/ 下，避免覆盖 Komari 根路径的 /favicon.ico。
+// 开关默认开启；关闭时移除 link，浏览器自动回退到 Komari 自带 favicon。
+const FAVICON_ID = 'theme-favicon'
+const FAVICON_HREF = import.meta.env.BASE_URL + 'komarihome/favicon.ico'
+
+watchEffect(() => {
+  const enabled = settings.value.themeFaviconEnabled !== false
+  let link = document.getElementById(FAVICON_ID)
+  if (enabled) {
+    if (!link) {
+      link = document.createElement('link')
+      link.id = FAVICON_ID
+      link.rel = 'icon'
+      document.head.appendChild(link)
+    }
+    link.href = FAVICON_HREF
+  } else if (link) {
+    link.remove()
+  }
 })
 </script>
 
