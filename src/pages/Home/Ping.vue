@@ -32,7 +32,7 @@
         </div>
       </div>
 
-      <div class="node-ping-grid">
+      <div class="card-grid min-300">
         <div v-for="node in pingNodes" :key="node.uuid" class="node-ping-card">
           <div class="node-ping-top">
             <span class="node-name">{{ node.name }}</span>
@@ -268,12 +268,6 @@ function barWidth(avg) {
   color: #66ccff;
 }
 
-.node-ping-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-}
-
 .node-ping-card {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
@@ -342,11 +336,5 @@ function barWidth(avg) {
   font-size: 2.5rem;
   display: block;
   margin-bottom: 0.5rem;
-}
-
-@media (max-width: 700px) {
-  .node-ping-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

@@ -42,29 +42,13 @@ const bgStyle = computed(() => {
 })
 </script>
 
-<style>
-/* 全局 reset — 非 scoped，确保所有子组件继承 */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-/* 隐藏滚动条但允许滚动，防止页面抖动 */
-html {
-  scrollbar-width: none;
-}
-html::-webkit-scrollbar {
-  display: none;
-}
-</style>
-
 <style scoped>
 #app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: "Segoe UI", sans-serif;
+  /* 拉丁字符优先落到 Roboto/system-ui，避免安卓端用 CJK 字体渲染拉丁文本导致行宽异常膨胀 */
+  font-family: "Segoe UI", system-ui, Roboto, "Noto Sans SC", sans-serif;
   position: relative;
 }
 

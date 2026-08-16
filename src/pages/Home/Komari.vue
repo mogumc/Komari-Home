@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <div class="server-grid" ref="gridRef">
+    <div class="card-grid min-320" ref="gridRef">
       <div
         v-for="node in paginatedNodes"
         :key="node.uuid"
@@ -638,13 +638,6 @@ function goInstance(uuid) {
   border: 1px solid rgba(102, 204, 255, 0.2);
 }
 
-.server-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
-  width: 100%;
-}
-
 .server-card {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
@@ -819,10 +812,6 @@ function goInstance(uuid) {
 }
 
 @media (max-width: 700px) {
-  .server-grid {
-    grid-template-columns: 1fr;
-  }
-
   .page-header {
     gap: 0.5rem;
   }

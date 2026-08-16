@@ -71,13 +71,6 @@ const goto = (url) => {
   gap: 10px;
 }
 
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-  width: 100%;
-}
-
 .site-card {
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
@@ -134,11 +127,5 @@ const goto = (url) => {
   color: rgba(255, 255, 255, 0.4);
   font-size: 0.9rem;
   padding: 2rem;
-}
-
-@media (max-width: 600px) {
-  .card-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

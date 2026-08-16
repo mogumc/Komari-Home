@@ -7,7 +7,7 @@
     </div>
 
     <!-- 硬件信息 -->
-    <div class="hardware-grid" v-if="nodeInfo.cpu_name">
+    <div class="card-grid" v-if="nodeInfo.cpu_name">
       <div class="glass-card">
         <h4><i class="bi bi-cpu"></i> 处理器</h4>
         <div class="hw-val">{{ nodeInfo.cpu_name || '-' }}</div>
@@ -24,7 +24,7 @@
       </div>
     </div>
 
-    <div class="detail-grid" v-if="metrics">
+    <div class="card-grid" v-if="metrics">
       <!-- CPU -->
       <div class="glass-card chart-card">
         <h4><i class="bi bi-cpu"></i> CPU <span class="chart-val">{{ cpuPercent }}%</span></h4>
@@ -158,7 +158,7 @@
           <button :class="{ active: pingHours === 24 }" @click="changePingHours(24)">24h</button>
         </div>
       </div>
-      <div class="ping-grid" :class="{ loading: pingLoading }">
+      <div class="card-grid min-300 ping-grid" :class="{ loading: pingLoading }">
         <div v-for="row in heatmapData.rows" :key="row.name" class="glass-card ping-card">
           <div class="ping-task-name">{{ row.name }}</div>
           <div class="heatmap">
@@ -597,13 +597,6 @@ function hasData(key) {
   color: #e57373;
 }
 
-.hardware-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-  width: 100%;
-}
-
 .hw-val {
   font-size: 1.05rem;
   font-weight: bold;
@@ -612,13 +605,6 @@ function hasData(key) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-  width: 100%;
 }
 
 .glass-card {
@@ -763,12 +749,6 @@ function hasData(key) {
   color: #66ccff;
 }
 
-.ping-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-}
-
 .ping-grid.loading {
   opacity: 0.5;
   pointer-events: none;
@@ -844,11 +824,5 @@ function hasData(key) {
   height: 10px;
   border-radius: 2px;
   margin-right: 4px;
-}
-
-@media (max-width: 700px) {
-  .detail-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

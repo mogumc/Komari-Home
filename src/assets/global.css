@@ -1,0 +1,51 @@
+/* ===== 全局基础样式（main.js 引入，所有页面生效）===== */
+
+/* 全局 reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* 隐藏滚动条但允许滚动，防止页面抖动 */
+html {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===== 响应式卡片网格（各页面卡片布局统一复用）=====
+ * 三重防溢出，任一环节缺失都可能在窄视口下把卡片撑出容器：
+ * 1. min() 将列最小宽度钳制在容器宽度内（防止 minmax 最小值 > 容器）；
+ * 2. 子项 min-width: 0 取消 grid item 的自动最小尺寸（防止长 nowrap 文本
+ *    如 CPU 名称把卡片顶出轨道——安卓回退字体比 Segoe UI 更宽时必现）；
+ * 3. 窄屏单列用 minmax(0, 1fr) 而非 1fr（1fr 等价 minmax(auto, 1fr)，
+ *    auto 最小值同样会被内容 min-content 撑开）。
+ * 默认列最小 280px，需要更宽的列时叠加 min-300 / min-320 修饰类。
+ */
+.card-grid {
+  --card-grid-min: 280px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--card-grid-min), 100%), 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.card-grid > * {
+  min-width: 0;
+}
+
+.card-grid.min-300 {
+  --card-grid-min: 300px;
+}
+
+.card-grid.min-320 {
+  --card-grid-min: 320px;
+}
+
+@media (max-width: 700px) {
+  .card-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
